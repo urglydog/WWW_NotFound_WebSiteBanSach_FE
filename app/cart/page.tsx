@@ -1,0 +1,168 @@
+"use client"
+
+import { useCart } from "@/lib/cart-context"
+import { Header } from "@/components/layout/header"
+import { Footer } from "@/components/layout/footer"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Trash2, Plus, Minus } from "lucide-react"
+
+export default function CartPage() {
+  const { state, dispatch } = useCart()
+
+  const subtotal = state.items.reduce((sum, item) => sum + item.book.price * item.quantity, 0)
+  const shipping = 0
+  const total = subtotal + shipping
+
+  if (state.items.length === 0) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <span className="text-6xl block">🛒</span>
+            <h1 className="text-2xl font-bold text-foreground">Giỏ hàng trống</h1>
+            <p className="text-muted-foreground">Hãy thêm sách vào giỏ hàng của bạn</p>
+            <Link href="/products">
+              <Button className="mt-4">Tiếp tục mua sắm</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h1 className="text-3xl font-bold text-foreground mb-8">Giỏ hàng của bạn</h1>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Cart Items */}
+            <div className="lg:col-span-2">
+              <div className="space-y-4">
+                {state.items.map((item) => (
+                  <div
+                    key={item.book.id}
+                    className="flex gap-4 p-4 bg-card rounded-lg border border-border hover:shadow-md transition"
+                  >
+                    {/* Image */}
+                    <div className="w-24 h-32 bg-muted rounded flex-shrink-0 flex items-center justify-center">
+                      <img
+                        src={item.book.image || "/placeholder.svg"}
+                        alt={item.book.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1">
+                      <Link
+                        href={`/products/${item.book.id}`}
+                        className="font-semibold text-foreground hover:text-primary transition"
+                      >
+                        {item.book.title}
+                      </Link>
+                      <p className="text-sm text-muted-foreground mb-3">{item.book.author}</p>
+
+                      {/* Price & Quantity */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center border border-border rounded-lg">
+                            <button
+                              onClick={() =>
+                                dispatch({
+                                  type: "UPDATE_QUANTITY",
+                                  payload: { id: item.book.id, quantity: item.quantity - 1 },
+                                })
+                              }
+                              className="p-2 hover:bg-muted"
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="px-4 py-2 font-semibold">{item.quantity}</span>
+                            <button
+                              onClick={() =>
+                                dispatch({
+                                  type: "UPDATE_QUANTITY",
+                                  payload: { id: item.book.id, quantity: item.quantity + 1 },
+                                })
+                              }
+                              className="p-2 hover:bg-muted"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary text-lg">
+                              {(item.book.price * item.quantity).toLocaleString("vi-VN")}₫
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {item.book.price.toLocaleString("vi-VN")}₫ x {item.quantity}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => dispatch({ type: "REMOVE_ITEM", payload: item.book.id })}
+                          className="p-2 hover:bg-muted hover:text-destructive transition rounded-lg"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                className="mt-6 bg-transparent"
+                onClick={() => dispatch({ type: "CLEAR_CART" })}
+              >
+                Xóa tất cả
+              </Button>
+            </div>
+
+            {/* Order Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-muted/50 rounded-lg p-6 border border-border sticky top-20">
+                <h2 className="font-bold text-lg text-foreground mb-4">Tóm tắt đơn hàng</h2>
+
+                <div className="space-y-3 mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tạm tính:</span>
+                    <span className="font-medium">{subtotal.toLocaleString("vi-VN")}₫</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vận chuyển:</span>
+                    <span className="font-medium text-accent">Miễn phí</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4 mb-4 flex justify-between">
+                  <span className="font-bold">Tổng cộng:</span>
+                  <span className="font-bold text-lg text-primary">{total.toLocaleString("vi-VN")}₫</span>
+                </div>
+
+                <Link href="/checkout" className="block">
+                  <Button className="w-full bg-primary hover:bg-primary/90 mb-2">Thanh toán ngay</Button>
+                </Link>
+                <Link href="/products">
+                  <Button variant="outline" className="w-full bg-transparent">
+                    Tiếp tục mua sắm
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
