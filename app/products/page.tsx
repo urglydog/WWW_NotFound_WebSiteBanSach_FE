@@ -76,20 +76,20 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex gap-8">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+          <div className="flex flex-col gap-8 lg:flex-row">
             {/* Sidebar Filters - Desktop */}
-            <aside className="hidden lg:block w-64 flex-shrink-0">
+            <aside className="hidden w-full max-w-xs shrink-0 lg:block">
               <ProductFilters filters={filters} onFiltersChange={setFilters} onReset={handleReset} />
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               {/* Mobile Filter Button */}
               <div className="lg:hidden mb-6">
                 <button
                   onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                  className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
                 >
                   <Filter size={18} />
                   Bộ lọc
@@ -98,14 +98,14 @@ export default function ProductsPage() {
 
               {/* Mobile Filters */}
               {mobileFiltersOpen && (
-                <div className="lg:hidden mb-6 p-4 border border-border rounded-lg bg-card">
+                <div className="mb-6 rounded-lg border border-border bg-card p-4 lg:hidden">
                   <ProductFilters filters={filters} onFiltersChange={setFilters} onReset={handleReset} />
                 </div>
               )}
 
               {/* Products Grid */}
               {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
                   {filteredProducts.map((book) => (
                     <ProductCard key={book.id} book={book} />
                   ))}

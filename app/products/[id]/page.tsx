@@ -34,9 +34,9 @@ export default function ProductDetailPage() {
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:gap-12">
             {/* Image */}
-            <div className="aspect-2/3 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+            <div className="flex aspect-2/3 items-center justify-center overflow-hidden rounded-lg bg-muted">
               <img src={book.image || "/placeholder.svg"} alt={book.title} className="w-full h-full object-cover" />
             </div>
 
@@ -91,33 +91,43 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Quantity & Actions */}
-              <div className="space-y-4 mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center border border-border rounded-lg">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2 hover:bg-muted">
+              <div className="mb-6 space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                  <div className="flex w-full items-center justify-between rounded-lg border border-border sm:w-auto">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="flex h-10 w-10 items-center justify-center rounded-l-lg transition hover:bg-muted"
+                      aria-label="Giảm số lượng"
+                    >
                       −
                     </button>
-                    <span className="px-6 py-2 border-l border-r border-border">{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-2 hover:bg-muted">
+                    <span className="flex h-10 flex-1 items-center justify-center border-x border-border text-sm font-semibold sm:w-16 sm:flex-none">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="flex h-10 w-10 items-center justify-center rounded-r-lg transition hover:bg-muted"
+                      aria-label="Tăng số lượng"
+                    >
                       +
                     </button>
                   </div>
-                  <Button size="lg" className="flex-1 bg-primary hover:bg-primary/90" disabled={!book.inStock}>
+                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:flex-1" disabled={!book.inStock}>
                     {book.inStock ? "Thêm vào giỏ" : "Hết hàng"}
                   </Button>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <button
                     onClick={() => setIsWishlisted(!isWishlisted)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 border border-border rounded-lg hover:bg-muted transition ${
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-border py-3 transition hover:bg-muted ${
                       isWishlisted ? "bg-muted text-primary" : ""
                     }`}
                   >
                     <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
                     {isWishlisted ? "Đã lưu" : "Lưu sách"}
                   </button>
-                  <button className="flex items-center justify-center gap-2 px-6 py-3 border border-border rounded-lg hover:bg-muted transition">
+                  <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-6 py-3 transition hover:bg-muted sm:flex-none">
                     <Share2 size={18} />
                     Chia sẻ
                   </button>
@@ -125,16 +135,16 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Info Section */}
-              <div className="border-t border-border pt-6 space-y-3 text-sm">
-                <div className="flex justify-between">
+              <div className="space-y-3 border-t border-border pt-6 text-sm">
+                <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
                   <span className="text-muted-foreground">Nhà xuất bản:</span>
                   <span className="text-foreground">NXB Thời đại</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
                   <span className="text-muted-foreground">Năm xuất bản:</span>
                   <span className="text-foreground">2024</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
                   <span className="text-muted-foreground">Loại bìa:</span>
                   <span className="text-foreground">Bìa mềm</span>
                 </div>

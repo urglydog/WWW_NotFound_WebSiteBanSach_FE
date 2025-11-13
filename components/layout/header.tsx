@@ -19,15 +19,17 @@ export function Header() {
     <>
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      <header className="border-b border-border bg-background sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/75">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">📚</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <span className="text-lg font-bold text-primary-foreground">📚</span>
               </div>
-              <span className="text-xl font-semibold text-foreground hidden sm:inline">Nhà Sách Online</span>
+              <span className="hidden text-lg font-semibold text-foreground sm:inline md:text-xl">
+                Nhà Sách Online
+              </span>
             </Link>
 
             {/* Navigation - Desktop */}
@@ -44,17 +46,22 @@ export function Header() {
             </nav>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSearchOpen(true)} className="p-2 hover:bg-muted rounded-lg transition">
-                <Search className="w-5 h-5" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Tìm kiếm"
+              >
+                <Search className="h-5 w-5" />
               </button>
               <button
                 onClick={() => dispatch({ type: "TOGGLE_CART" })}
-                className="p-2 hover:bg-muted rounded-lg transition relative"
+                className="relative rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Mở giỏ hàng"
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center font-bold">
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                     {cartCount}
                   </span>
                 )}
@@ -62,43 +69,67 @@ export function Header() {
 
               {/* User dropdown or login button */}
               {user ? (
-                <Link href="/account" className="p-2 hover:bg-muted rounded-lg transition flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  <span className="hidden sm:inline text-sm font-medium">{user.fullName}</span>
+                <Link
+                  href="/account"
+                  className="flex items-center gap-2 rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <User className="h-5 w-5" />
+                  <span className="hidden text-sm font-medium sm:inline">{user.fullName}</span>
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" size="sm" className="hidden sm:inline-flex bg-transparent">
+                  <Button variant="outline" size="sm" className="hidden bg-transparent sm:inline-flex">
                     Đăng nhập
                   </Button>
                 </Link>
               )}
 
               {/* Mobile menu button */}
-              <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <button
+                className="rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-expanded={mobileMenuOpen}
+                aria-label="Mở menu"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <nav className="md:hidden pb-4 flex flex-col gap-3">
-              <Link href="/products" className="text-foreground hover:text-primary py-2">
+            <nav className="flex flex-col gap-2 pb-4 md:hidden">
+              <Link
+                href="/products"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Cửa hàng
               </Link>
-              <Link href="/categories" className="text-foreground hover:text-primary py-2">
+              <Link
+                href="/categories"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Danh mục
               </Link>
-              <Link href="/about" className="text-foreground hover:text-primary py-2">
+              <Link
+                href="/about"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Về chúng tôi
               </Link>
               {user ? (
-                <Link href="/account" className="text-foreground hover:text-primary py-2">
+                <Link
+                  href="/account"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   Tài khoản
                 </Link>
               ) : (
-                <Link href="/login" className="w-full">
+                <Link href="/login" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                   <Button className="w-full">Đăng nhập</Button>
                 </Link>
               )}

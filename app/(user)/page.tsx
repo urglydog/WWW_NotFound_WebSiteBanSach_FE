@@ -116,38 +116,47 @@ export default function Home() {
   return (
     <UserLayout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-400 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl font-bold">Khám phá thế giới sách đầy màu sắc</h1>
-              <p className="text-lg opacity-90">
+      <section className="bg-linear-to-r from-blue-600 to-blue-400 py-14 text-white sm:py-16">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2">
+            <div className="space-y-4 text-center md:text-left">
+              <h1 className="text-4xl font-bold md:text-5xl">Khám phá thế giới sách đầy màu sắc</h1>
+              <p className="mx-auto max-w-xl text-base opacity-90 sm:text-lg md:mx-0">
                 Hàng triệu cuốn sách được chọn lọc cẩn thận, giao hàng nhanh, dịch vụ tốt nhất
               </p>
-              <Link href="/products">
-                <Button type="primary" size="large" className="bg-white text-blue-600">
-                  Mua sắm ngay
-                </Button>
-              </Link>
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
+                <Link href="/products" className="w-full sm:w-auto">
+                  <Button type="primary" size="large" className="w-full bg-white text-blue-600 hover:bg-white/90!">
+                    Mua sắm ngay
+                  </Button>
+                </Link>
+                <Link href="/categories" className="w-full sm:w-auto">
+                  <Button size="large" className="w-full bg-blue-500/30 text-white hover:bg-blue-500/40">
+                    Khám phá danh mục
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-6xl">📚</div>
+            <div className="flex justify-center">
+              <div className="flex aspect-square max-w-xs items-center justify-center rounded-2xl bg-white/10 backdrop-blur sm:max-w-sm">
+                <div className="text-5xl sm:text-6xl">📚</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Bestsellers Section */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Sách bán chạy nhất</h2>
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:py-16">
+        <div className="mb-8 text-center sm:text-left">
+          <h2 className="mb-2 text-3xl font-bold">Sách bán chạy nhất</h2>
           <p className="text-gray-600">Những cuốn sách được yêu thích nhất hiện tại</p>
         </div>
 
         <Spin spinning={loading}>
-          <Row gutter={[16, 16]}>
+          <Row gutter={[16, 20]}>
             {mockBooks.map((book) => (
-              <Col key={book.id} xs={12} sm={12} md={6} lg={6}>
+              <Col key={book.id} xs={24} sm={12} md={12} lg={6}>
                 <BookCard book={book} />
               </Col>
             ))}
@@ -156,23 +165,23 @@ export default function Home() {
       </section>
 
       {/* Categories Section */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="bg-gray-50 py-14 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4">
           <div className="mb-8 text-center">
-            <h2 className="text-3xl font-bold mb-2">Danh mục phổ biến</h2>
+            <h2 className="mb-2 text-3xl font-bold">Danh mục phổ biến</h2>
             <p className="text-gray-600">Duyệt qua các danh mục sách yêu thích</p>
           </div>
 
-          <Row gutter={[16, 16]}>
+          <Row gutter={[16, 20]}>
             {["Văn học", "Kinh tế", "Tâm lý học", "Kỹ năng"].map((category) => (
-              <Col key={category} xs={12} sm={12} md={6} lg={6}>
+              <Col key={category} xs={24} sm={12} md={12} lg={6}>
                 <Card
                   hoverable
-                  className="text-center"
-                  cover={<div className="bg-blue-100 h-32 flex items-center justify-center text-4xl">📖</div>}
+                  className="text-center transition hover:-translate-y-1 hover:shadow-lg"
+                  cover={<div className="flex h-32 items-center justify-center bg-blue-100 text-4xl sm:text-5xl">📖</div>}
                 >
                   <h3 className="font-semibold text-lg">{category}</h3>
-                  <p className="text-gray-600 text-sm">Khám phá {category}</p>
+                  <p className="text-sm text-gray-600 sm:text-base">Khám phá {category}</p>
                 </Card>
               </Col>
             ))}

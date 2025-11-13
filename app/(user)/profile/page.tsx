@@ -67,18 +67,20 @@ export default function ProfilePage() {
 
   return (
     <UserLayout>
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">Tài khoản cá nhân</h1>
+      <div className="mx-auto w-full max-w-4xl px-4 py-12">
+        <h1 className="mb-6 text-3xl font-bold sm:mb-8">Tài khoản cá nhân</h1>
 
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
+        <div className="rounded-lg border border-border bg-card/40 p-2 sm:p-4">
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            tabBarGutter={16}
+            items={[
             {
               key: "info",
               label: "Thông tin cá nhân",
               children: (
-                <Card>
+                <Card className="shadow-sm">
                   <Form form={form} layout="vertical" onFinish={handleUpdateProfile}>
                     <Form.Item name="fullName" label="Họ và tên" rules={[{ required: true }]}>
                       <Input />
@@ -97,14 +99,14 @@ export default function ProfilePage() {
                     </Form.Item>
 
                     <Form.Item>
-                      <Button type="primary" htmlType="submit" loading={loading}>
+                      <Button type="primary" htmlType="submit" loading={loading} className="w-full sm:w-auto">
                         Cập nhật
                       </Button>
                     </Form.Item>
                   </Form>
 
-                  <div className="mt-8 pt-8 border-t">
-                    <h3 className="font-bold mb-4">Đổi mật khẩu</h3>
+                  <div className="mt-8 border-t pt-8">
+                    <h3 className="mb-4 font-bold">Đổi mật khẩu</h3>
                     <Form layout="vertical">
                       <Form.Item name="oldPassword" label="Mật khẩu cũ" rules={[{ required: true }]}>
                         <Input.Password />
@@ -118,7 +120,7 @@ export default function ProfilePage() {
                         <Input.Password />
                       </Form.Item>
 
-                      <Button>Đổi mật khẩu</Button>
+                      <Button className="w-full sm:w-auto">Đổi mật khẩu</Button>
                     </Form>
                   </div>
                 </Card>
@@ -128,36 +130,40 @@ export default function ProfilePage() {
               key: "orders",
               label: "Lịch sử đơn hàng",
               children: (
-                <Card>
-                  <Table
-                    dataSource={mockOrders}
-                    columns={[
-                      {
-                        title: "Mã đơn hàng",
-                        dataIndex: "id",
-                      },
-                      {
-                        title: "Ngày đặt",
-                        dataIndex: "date",
-                      },
-                      {
-                        title: "Số lượng",
-                        dataIndex: "items",
-                      },
-                      {
-                        title: "Tổng tiền",
-                        dataIndex: "total",
-                        render: (total) => `${total.toLocaleString()} đ`,
-                      },
-                      {
-                        title: "Trạng thái",
-                        dataIndex: "status",
-                        render: (status) => (
-                          <span className={status === "Đã giao" ? "text-green-600" : "text-blue-600"}>{status}</span>
-                        ),
-                      },
-                    ]}
-                  />
+                <Card className="shadow-sm">
+                  <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                    <Table
+                      dataSource={mockOrders}
+                      pagination={false}
+                      scroll={{ x: 640 }}
+                      columns={[
+                        {
+                          title: "Mã đơn hàng",
+                          dataIndex: "id",
+                        },
+                        {
+                          title: "Ngày đặt",
+                          dataIndex: "date",
+                        },
+                        {
+                          title: "Số lượng",
+                          dataIndex: "items",
+                        },
+                        {
+                          title: "Tổng tiền",
+                          dataIndex: "total",
+                          render: (total) => `${total.toLocaleString()} đ`,
+                        },
+                        {
+                          title: "Trạng thái",
+                          dataIndex: "status",
+                          render: (status) => (
+                            <span className={status === "Đã giao" ? "text-green-600" : "text-blue-600"}>{status}</span>
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
                 </Card>
               ),
             },
@@ -165,38 +171,43 @@ export default function ProfilePage() {
               key: "wishlist",
               label: "Danh sách yêu thích",
               children: (
-                <Card>
+                <Card className="shadow-sm">
                   {mockWishlist.length === 0 ? (
                     <Empty description="Danh sách trống" />
                   ) : (
-                    <Table
-                      dataSource={mockWishlist}
-                      columns={[
-                        {
-                          title: "Tên sách",
-                          dataIndex: "title",
-                        },
-                        {
-                          title: "Giá",
-                          dataIndex: "price",
-                          render: (price) => `${price.toLocaleString()} đ`,
-                        },
-                        {
-                          title: "Hành động",
-                          render: () => (
-                            <Button type="primary" size="small">
-                              Thêm vào giỏ hàng
-                            </Button>
-                          ),
-                        },
-                      ]}
-                    />
+                    <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                      <Table
+                        dataSource={mockWishlist}
+                        pagination={false}
+                        scroll={{ x: 520 }}
+                        columns={[
+                          {
+                            title: "Tên sách",
+                            dataIndex: "title",
+                          },
+                          {
+                            title: "Giá",
+                            dataIndex: "price",
+                            render: (price) => `${price.toLocaleString()} đ`,
+                          },
+                          {
+                            title: "Hành động",
+                            render: () => (
+                              <Button type="primary" size="small">
+                                Thêm vào giỏ hàng
+                              </Button>
+                            ),
+                          },
+                        ]}
+                      />
+                    </div>
                   )}
                 </Card>
               ),
             },
           ]}
-        />
+          />
+        </div>
       </div>
     </UserLayout>
   )

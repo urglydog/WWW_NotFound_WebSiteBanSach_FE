@@ -93,28 +93,28 @@ export default function CheckoutPage() {
       <Header />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h1 className="text-3xl font-bold text-foreground mb-8">Thanh toán</h1>
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+          <h1 className="mb-8 text-3xl font-bold text-foreground">Thanh toán</h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Checkout Form */}
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Shipping Information */}
-                <div className="bg-card p-6 rounded-lg border border-border">
-                  <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
                     <MapPin size={20} />
                     Thông tin giao hàng
                   </h2>
 
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <input
                         type="text"
                         placeholder="Họ và tên"
                         value={formData.fullName}
                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        className="col-span-2 px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="rounded-lg border border-border bg-background px-4 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:col-span-2"
                         required
                       />
                       <input
@@ -161,7 +161,7 @@ export default function CheckoutPage() {
                         placeholder="Địa chỉ chi tiết (Số nhà, đường phố...)"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="col-span-2 px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        className="resize-none rounded-lg border border-border bg-background px-4 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:col-span-2"
                         rows={3}
                         required
                       />
@@ -170,8 +170,8 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Payment Method */}
-                <div className="bg-card p-6 rounded-lg border border-border">
-                  <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
                     <CreditCard size={20} />
                     Phương thức thanh toán
                   </h2>
@@ -209,7 +209,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <Link href="/cart" className="flex-1">
                     <Button variant="outline" className="w-full bg-transparent">
                       Quay lại giỏ hàng
@@ -224,32 +224,34 @@ export default function CheckoutPage() {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-muted/50 rounded-lg p-6 border border-border sticky top-20">
-                <h2 className="font-bold text-lg text-foreground mb-4">Đơn hàng của bạn</h2>
+              <div className="sticky top-24 rounded-lg border border-border bg-muted/50 p-6">
+                <h2 className="mb-4 text-lg font-bold text-foreground">Đơn hàng của bạn</h2>
 
-                <div className="space-y-3 mb-4 max-h-80 overflow-y-auto">
+                <div className="mb-4 max-h-80 space-y-3 overflow-y-auto pr-1">
                   {state.items.map((item) => (
-                    <div key={item.book.id} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
+                    <div key={item.book.id} className="flex items-start justify-between gap-4 text-sm">
+                      <span className="flex-1 text-muted-foreground">
                         {item.book.title} x {item.quantity}
                       </span>
-                      <span className="font-medium">{(item.book.price * item.quantity).toLocaleString("vi-VN")}₫</span>
+                      <span className="whitespace-nowrap font-medium">
+                        {(item.book.price * item.quantity).toLocaleString("vi-VN")}₫
+                      </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="border-t border-border space-y-3 pt-4 mb-4">
-                  <div className="flex justify-between">
+                <div className="mb-4 space-y-3 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Tạm tính:</span>
                     <span className="font-medium">{subtotal.toLocaleString("vi-VN")}₫</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Vận chuyển:</span>
                     <span className="font-medium text-accent">Miễn phí</span>
                   </div>
                 </div>
 
-                <div className="border-t border-border pt-4 flex justify-between">
+                <div className="flex items-center justify-between border-t border-border pt-4">
                   <span className="font-bold">Tổng cộng:</span>
                   <span className="font-bold text-lg text-primary">{total.toLocaleString("vi-VN")}₫</span>
                 </div>
