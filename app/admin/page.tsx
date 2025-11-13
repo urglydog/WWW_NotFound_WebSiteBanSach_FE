@@ -66,7 +66,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="p-8 space-y-8">
+      <div className="space-y-8 px-4 py-6 sm:p-6 lg:p-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Tổng quan kinh doanh</h1>
           <p className="text-muted-foreground mt-2">

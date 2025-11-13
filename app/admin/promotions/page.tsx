@@ -47,67 +47,70 @@ export default function PromotionsPage() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Quản lý khuyến mãi</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          Thêm khuyến mãi
-        </Button>
+    <div className="min-h-screen bg-muted/40">
+      <div className="space-y-6 px-4 py-6 sm:p-6 lg:p-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-3xl font-bold text-foreground">Quản lý khuyến mãi</h1>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            Thêm khuyến mãi
+          </Button>
+        </div>
+
+        <Card className="rounded-2xl shadow-sm">
+          <Table
+            dataSource={promotions}
+            columns={[
+              { title: "ID", dataIndex: "id" },
+              { title: "Tên", dataIndex: "name" },
+              { title: "Mã", dataIndex: "code" },
+              { title: "Giảm (%)", dataIndex: "discount" },
+              {
+                title: "Hành động",
+                render: (_, record) => (
+                  <Space>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        setEditingId(record.id)
+                        form.setFieldsValue(record)
+                        setIsModalVisible(true)
+                      }}
+                    >
+                      Sửa
+                    </Button>
+                    <Button danger size="small" icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>
+                      Xóa
+                    </Button>
+                  </Space>
+                ),
+              },
+            ]}
+            pagination={false}
+            scroll={{ x: true }}
+          />
+        </Card>
+
+        <Modal
+          title={editingId ? "Sửa khuyến mãi" : "Thêm khuyến mãi mới"}
+          open={isModalVisible}
+          onOk={() => form.submit()}
+          onCancel={() => setIsModalVisible(false)}
+        >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+            <Form.Item name="name" label="Tên khuyến mãi" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="code" label="Mã khuyến mãi" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="discount" label="Giảm giá (%)" rules={[{ required: true }]}>
+              <InputNumber min={0} max={100} className="w-full" />
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
-
-      <Card>
-        <Table
-          dataSource={promotions}
-          columns={[
-            { title: "ID", dataIndex: "id" },
-            { title: "Tên", dataIndex: "name" },
-            { title: "Mã", dataIndex: "code" },
-            { title: "Giảm (%)", dataIndex: "discount" },
-            {
-              title: "Hành động",
-              render: (_, record) => (
-                <Space>
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      setEditingId(record.id)
-                      form.setFieldsValue(record)
-                      setIsModalVisible(true)
-                    }}
-                  >
-                    Sửa
-                  </Button>
-                  <Button danger size="small" icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>
-                    Xóa
-                  </Button>
-                </Space>
-              ),
-            },
-          ]}
-          pagination={false}
-        />
-      </Card>
-
-      <Modal
-        title={editingId ? "Sửa khuyến mãi" : "Thêm khuyến mãi mới"}
-        open={isModalVisible}
-        onOk={() => form.submit()}
-        onCancel={() => setIsModalVisible(false)}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="name" label="Tên khuyến mãi" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="code" label="Mã khuyến mãi" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="discount" label="Giảm giá (%)" rules={[{ required: true }]}>
-            <InputNumber min={0} max={100} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   )
 }

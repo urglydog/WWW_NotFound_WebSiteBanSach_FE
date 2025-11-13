@@ -7,9 +7,11 @@ import { cn } from "@/lib/utils"
 
 interface AdminSidebarProps {
   onLogout: () => void
+  onNavigate?: () => void
+  className?: string
 }
 
-export function AdminSidebar({ onLogout }: AdminSidebarProps) {
+export function AdminSidebar({ onLogout, onNavigate, className }: AdminSidebarProps) {
   const pathname = usePathname()
 
   const menuItems = [
@@ -22,10 +24,10 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
   ]
 
   return (
-    <div className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
+    <div className={cn("flex w-64 min-h-full flex-col bg-primary text-primary-foreground", className)}>
       {/* Logo */}
       <div className="p-6 border-b border-primary-foreground/20">
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2">
           <div className="w-10 h-10 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
             <span className="text-xl">📚</span>
           </div>
@@ -39,6 +41,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-lg transition",
               pathname === item.href ? "bg-primary-foreground/20" : "hover:bg-primary-foreground/10",

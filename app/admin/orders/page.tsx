@@ -120,25 +120,25 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="p-8 space-y-8">
+      <div className="space-y-8 px-4 py-6 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h1>
             <p className="text-muted-foreground mt-2">Theo dõi trạng thái xử lý và vận chuyển đơn hàng theo thời gian thực.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" className="gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:self-end">
+            <Button variant="outline" className="gap-2 sm:w-auto">
               <Calendar className="w-4 h-4" />
               Báo cáo theo ngày
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2 sm:w-auto">
               <Download className="w-4 h-4" />
               Xuất báo cáo
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {statHighlights.map((stat) => (
             <Card key={stat.label} className="border border-border/80 rounded-2xl shadow-sm bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -155,7 +155,7 @@ export default function AdminOrdersPage() {
 
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
           <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-            <div className="flex flex-1 gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between xl:flex-1">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <Input
@@ -165,15 +165,15 @@ export default function AdminOrdersPage() {
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 sm:w-auto">
                 <Filter className="w-4 h-4" />
                 Bộ lọc nâng cao
               </Button>
             </div>
 
-            <div className="flex flex-1 gap-3 justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:flex-1 xl:justify-end">
               <Select value={channel} onValueChange={(value) => setChannel(value)}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Kênh bán" />
                 </SelectTrigger>
                 <SelectContent>
@@ -183,7 +183,7 @@ export default function AdminOrdersPage() {
                 </SelectContent>
               </Select>
               <Tabs value={activeStatus} onValueChange={(value) => setActiveStatus(value)}>
-                <TabsList className="w-full justify-start overflow-x-auto">
+                <TabsList className="w-full justify-start gap-1 overflow-x-auto rounded-lg border border-border/60 bg-muted/30 p-1">
                   {statusOptions.map((status) => (
                     <TabsTrigger key={status} value={status}>
                       {status}
@@ -194,11 +194,11 @@ export default function AdminOrdersPage() {
             </div>
           </div>
 
-          <div className="border border-dashed border-border/80 rounded-xl p-4 text-sm text-muted-foreground flex items-center justify-between">
+          <div className="border border-dashed border-border/80 rounded-xl p-4 text-sm text-muted-foreground flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>
               Đang hiển thị <strong>{filteredOrders.length}</strong> trên tổng <strong>{mockOrders.length}</strong> đơn hàng.
             </span>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="self-start sm:self-auto">
               Đặt lại bộ lọc
             </Button>
           </div>
@@ -220,8 +220,8 @@ export default function AdminOrdersPage() {
               </DropdownMenu>
             </div>
 
-            <ScrollArea className="h-[560px]">
-              <table className="w-full">
+            <ScrollArea className="h-[420px] sm:h-[500px] xl:h-[560px]">
+              <table className="min-w-[720px] w-full">
                 <thead className="text-left text-sm text-muted-foreground bg-muted/20">
                   <tr>
                     <th className="px-6 py-3 font-medium">Mã đơn</th>

@@ -49,7 +49,7 @@ export default function AdminBooksPage() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="p-8 space-y-8">
+      <div className="space-y-8 px-4 py-6 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -58,12 +58,12 @@ export default function AdminBooksPage() {
               Quản lý tồn kho, cập nhật thông tin sách và theo dõi hiệu suất bán hàng.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" className="gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:self-end">
+            <Button variant="outline" className="gap-2 sm:w-auto">
               <Filter className="w-4 h-4" />
               Lưu bộ lọc
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2 sm:w-auto">
               <Plus className="w-4 h-4" />
               Thêm sách mới
             </Button>
@@ -83,9 +83,18 @@ export default function AdminBooksPage() {
               />
             </div>
 
-            <ToggleGroup type="single" value={activeAvailability} onValueChange={(value) => value && setActiveAvailability(value)}>
+            <ToggleGroup
+              type="single"
+              value={activeAvailability}
+              onValueChange={(value) => value && setActiveAvailability(value)}
+              className="flex flex-wrap gap-2 rounded-lg border border-border/60 bg-muted/30 p-1 sm:items-center sm:justify-start"
+            >
               {availabilityFilters.map((filter) => (
-                <ToggleGroupItem key={filter.value} value={filter.value} className="px-4">
+                <ToggleGroupItem
+                  key={filter.value}
+                  value={filter.value}
+                  className="flex-1 rounded-md px-3 py-2 text-sm sm:flex-none"
+                >
                   {filter.label}
                 </ToggleGroupItem>
               ))}
@@ -137,8 +146,8 @@ export default function AdminBooksPage() {
               </DropdownMenu>
             </div>
 
-            <ScrollArea className="h-[560px]">
-              <table className="w-full">
+            <ScrollArea className="h-[420px] sm:h-[500px] xl:h-[560px]">
+              <table className="min-w-[720px] w-full">
                 <thead className="bg-muted/40 text-left text-sm text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 font-medium">Sách</th>
