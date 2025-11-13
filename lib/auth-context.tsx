@@ -13,11 +13,30 @@ export interface User {
   createdAt: string
 }
 
+function decodeGoogleCredential(credential: string) {
+  const parts = credential.split(".")
+  if (parts.length < 2) {
+    throw new Error("GOOGLE_SIGNIN_INVALID_TOKEN")
+  }
+
+  const base64 = parts[1]
+  const normalized = base64.replace(/-/g, "+").replace(/_/g, "/")
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")
+  const decoded = atob(padded)
+
+  try {
+    return JSON.parse(decoded)
+  } catch {
+    throw new Error("GOOGLE_SIGNIN_INVALID_TOKEN")
+  }
+}
+
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (identifier: string, password: string) => Promise<User>
   signup: (email: string, password: string, fullName: string) => Promise<User>
+  loginWithGoogle: (credential: string) => Promise<User>
   logout: () => void
   isAuthenticated: boolean
 }
@@ -112,6 +131,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const loginWithGoogle = async (credential: string) => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      throw new Error("GOOGLE_SIGNIN_UNCONFIGURED")
+    }
+
+    if (!credential) {
+      throw new Error("GOOGLE_SIGNIN_CREDENTIAL_MISSING")
+    }
+
+    setIsLoading(true)
+    try {
+      const payload = decodeGoogleCredential(credential)
+      const email = typeof payload?.email === "string" ? payload.email : ""
+      const emailVerified = typeof payload?.email_verified === "boolean" ? payload.email_verified : true
+
+      if (!email) {
+        throw new Error("GOOGLE_SIGNIN_EMAIL_REQUIRED")
+      }
+
+      if (!emailVerified) {
+        throw new Error("GOOGLE_SIGNIN_EMAIL_NOT_VERIFIED")
+      }
+
+      let matchedUser: any = null
+      try {
+        const response = await fetch("/db.json")
+        if (response.ok) {
+          const data = await response.json()
+          const users = Array.isArray(data?.users) ? data.users : []
+          matchedUser = users.find((user: any) => {
+            if (!user?.email) return false
+            return String(user.email).trim().toLowerCase() === email.trim().toLowerCase()
+          })
+        }
+      } catch {
+        // Ignore fetch errors; fallback to Google payload
+      }
+
+      const role = typeof matchedUser?.role === "string" ? matchedUser.role.toUpperCase() : "CUSTOMER"
+      const fullName =
+        typeof payload?.name === "string" && payload.name
+          ? payload.name
+          : typeof matchedUser?.fullName === "string" && matchedUser.fullName
+            ? matchedUser.fullName
+            : email.split("@")[0] ?? ""
+
+      const authenticatedUser: User = {
+        id: String(matchedUser?.id ?? payload?.sub ?? crypto.randomUUID()),
+        email,
+        fullName,
+        role,
+        username: matchedUser?.username ?? (typeof payload?.given_name === "string" ? payload.given_name : undefined),
+        phone: matchedUser?.phone,
+        avatar: typeof payload?.picture === "string" ? payload.picture : matchedUser?.avatar,
+        createdAt: new Date().toISOString(),
+      }
+
+      setUser(authenticatedUser)
+      localStorage.setItem("user", JSON.stringify(authenticatedUser))
+      return authenticatedUser
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const signup = async (email: string, password: string, fullName: string) => {
     setIsLoading(true)
     try {
@@ -146,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         signup,
+        loginWithGoogle,
         logout,
         isAuthenticated: !!user,
       }}
