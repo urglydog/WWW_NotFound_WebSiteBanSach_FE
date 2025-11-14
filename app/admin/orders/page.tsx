@@ -221,54 +221,56 @@ export default function AdminOrdersPage() {
             </div>
 
             <ScrollArea className="h-[420px] sm:h-[500px] xl:h-[560px]">
-              <table className="min-w-[720px] w-full">
-                <thead className="text-left text-sm text-muted-foreground bg-muted/20">
-                  <tr>
-                    <th className="px-6 py-3 font-medium">Mã đơn</th>
-                    <th className="px-6 py-3 font-medium">Khách hàng</th>
-                    <th className="px-6 py-3 font-medium">Liên hệ</th>
-                    <th className="px-6 py-3 font-medium">Giá trị</th>
-                    <th className="px-6 py-3 font-medium">Ngày</th>
-                    <th className="px-6 py-3 font-medium">Trạng thái</th>
-                    <th className="px-6 py-3 font-medium text-right">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="border-t border-border/60 hover:bg-muted/40 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-primary">{order.id}</span>
-                          <span className="text-xs text-muted-foreground">{order.address}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-foreground">{order.customer}</p>
-                        <p className="text-xs text-muted-foreground">{order.payment}</p>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        <p>{order.email}</p>
-                        <p>{order.phone}</p>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-foreground">
-                        {order.total.toLocaleString("vi-VN")}₫
-                        <span className="block text-xs text-muted-foreground">{order.items} sản phẩm</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">{order.date}</td>
-                      <td className="px-6 py-4">
-                        <Badge variant="secondary" className={`${statusBadgeStyles[order.status] ?? ""} border`}>
-                          {order.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Button size="sm" variant="outline">
-                          Xem chi tiết
-                        </Button>
-                      </td>
+              <div className="w-full overflow-x-auto">
+                <table className="min-w-[720px] w-full">
+                  <thead className="text-left text-sm text-muted-foreground bg-muted/20">
+                    <tr>
+                      <th className="px-6 py-3 font-medium">Mã đơn</th>
+                      <th className="px-6 py-3 font-medium">Khách hàng</th>
+                      <th className="px-6 py-3 font-medium">Liên hệ</th>
+                      <th className="px-6 py-3 font-medium">Giá trị</th>
+                      <th className="px-6 py-3 font-medium">Ngày</th>
+                      <th className="px-6 py-3 font-medium">Trạng thái</th>
+                      <th className="px-6 py-3 font-medium text-right">Hành động</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map((order) => (
+                      <tr key={order.id} className="border-t border-border/60 hover:bg-muted/40 transition">
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-primary">{order.id}</span>
+                            <span className="text-xs text-muted-foreground">{order.address}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-medium text-foreground">{order.customer}</p>
+                          <p className="text-xs text-muted-foreground">{order.payment}</p>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          <p>{order.email}</p>
+                          <p>{order.phone}</p>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                          {order.total.toLocaleString("vi-VN")}₫
+                          <span className="block text-xs text-muted-foreground">{order.items} sản phẩm</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">{order.date}</td>
+                        <td className="px-6 py-4">
+                          <Badge variant="secondary" className={`${statusBadgeStyles[order.status] ?? ""} border`}>
+                            {order.status}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Button size="sm" variant="outline">
+                            Xem chi tiết
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </ScrollArea>
           </div>
         </div>

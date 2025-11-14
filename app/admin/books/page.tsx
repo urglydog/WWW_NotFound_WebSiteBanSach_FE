@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Slider } from "@/components/ui/slider"
@@ -49,7 +54,7 @@ export default function AdminBooksPage() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="space-y-8 px-4 py-6 sm:p-6 lg:p-8">
+      <div className="w-full max-w-6xl space-y-8 px-4 py-6 sm:p-6 lg:p-8 mx-auto">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -71,7 +76,11 @@ export default function AdminBooksPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
+        {/* *** 💡 ĐÂY LÀ THAY ĐỔI ***
+          Đã thay đổi từ "p-6 space-y-6" thành "p-4 space-y-4 sm:p-6 sm:space-y-6"
+          để sử dụng padding nhỏ hơn trên màn hình di động.
+        */}
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm space-y-4 sm:p-6 sm:space-y-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="relative w-full lg:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -131,8 +140,10 @@ export default function AdminBooksPage() {
         {/* Content */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <div className="xl:col-span-2 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
-              <p className="text-sm text-muted-foreground">Hiển thị {filteredBooks.length} / {mockBooks.length} sách</p>
+            <div className="flex items-center justify-between px-4 py-4 sm:px-6 border-b border-border/60">
+              <p className="text-sm text-muted-foreground">
+                Hiển thị {filteredBooks.length} / {mockBooks.length} sách
+              </p>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -146,61 +157,143 @@ export default function AdminBooksPage() {
               </DropdownMenu>
             </div>
 
-            <ScrollArea className="h-[420px] sm:h-[500px] xl:h-[560px]">
-              <table className="min-w-[720px] w-full">
-                <thead className="bg-muted/40 text-left text-sm text-muted-foreground">
-                  <tr>
-                    <th className="px-6 py-3 font-medium">Sách</th>
-                    <th className="px-6 py-3 font-medium">Tác giả</th>
-                    <th className="px-6 py-3 font-medium">Danh mục</th>
-                    <th className="px-6 py-3 font-medium text-right">Giá bán</th>
-                    <th className="px-6 py-3 font-medium text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredBooks.map((book) => (
-                    <tr key={book.id} className="border-t border-border/60 hover:bg-muted/40 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-14 w-10 overflow-hidden rounded">
-                            <Image src={book.image} alt={book.title} fill className="object-cover" sizes="40px" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{book.title}</p>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>{book.reviews} lượt đánh giá</span>
-                              {book.discount && (
-                                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                  -{book.discount}%
-                                </Badge>
-                              )}
+            <div className="hidden md:block">
+              <ScrollArea className="h-[420px] md:h-[520px] xl:h-[560px]">
+                <div className="w-full overflow-x-auto">
+                  <table className="min-w-[720px] w-full">
+                    <thead className="bg-muted/40 text-left text-sm text-muted-foreground">
+                      <tr>
+                        <th className="px-6 py-3 font-medium">Sách</th>
+                        <th className="px-6 py-3 font-medium">Tác giả</th>
+                        <th className="px-6 py-3 font-medium">Danh mục</th>
+                        <th className="px-6 py-3 font-medium text-right">Giá bán</th>
+                        <th className="px-6 py-3 font-medium text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredBooks.map((book) => (
+                        <tr
+                          key={book.id}
+                          className="border-t border-border/60 hover:bg-muted/40 transition"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="relative h-14 w-10 overflow-hidden rounded">
+                                <Image
+                                  src={book.image}
+                                  alt={book.title}
+                                  fill
+                                  className="object-cover"
+                                  sizes="40px"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-foreground">{book.title}</p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <span>{book.reviews} lượt đánh giá</span>
+                                  {book.discount && (
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                      -{book.discount}%
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-muted-foreground">{book.author}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{book.category}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-primary">
-                        {book.price.toLocaleString("vi-VN")}₫
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end items-center gap-2">
-                          <Badge variant={book.inStock ? "outline" : "destructive"} className="px-3">
-                            {book.inStock ? "Còn hàng" : "Hết hàng"}
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground">{book.author}</td>
+                          <td className="px-6 py-4 text-muted-foreground">{book.category}</td>
+                          <td className="px-6 py-4 text-right font-semibold text-primary">
+                            {book.price.toLocaleString("vi-VN")}₫
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-end items-center gap-2">
+                              <Badge variant={book.inStock ? "outline" : "destructive"} className="px-3">
+                                {book.inStock ? "Còn hàng" : "Hết hàng"}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-primary hover:text-primary"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="md:hidden px-4 pb-6 space-y-4">
+              {filteredBooks.map((book) => (
+                <div
+                  key={book.id}
+                  className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm space-y-3"
+                >
+                  <div className="flex gap-3">
+                    <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg">
+                      <Image
+                        src={book.image}
+                        alt={book.title}
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="space-y-1">
+                        <h3 className="text-base font-semibold text-foreground line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant="secondary" className="bg-muted text-foreground">
+                          {book.category}
+                        </Badge>
+                        {book.discount && (
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">
+                            -{book.discount}%
                           </Badge>
-                          <Button variant="ghost" size="icon" className="text-primary hover:text-primary">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollArea>
+                        )}
+                        <span>{book.reviews} đánh giá</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-semibold text-primary">
+                          {book.price.toLocaleString("vi-VN")}₫
+                        </span>
+                        <Badge
+                          variant={book.inStock ? "outline" : "destructive"}
+                          className="px-2 py-1 text-xs"
+                        >
+                          {book.inStock ? "Còn hàng" : "Hết hàng"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="sm" variant="outline" className="w-full gap-1">
+                      <Edit className="w-4 h-4" />
+                      Chỉnh sửa
+                    </Button>
+                    <Button size="sm" variant="destructive" className="w-full gap-1">
+                      <Trash2 className="w-4 h-4" />
+                      Xóa
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-8">
@@ -250,4 +343,3 @@ export default function AdminBooksPage() {
     </div>
   )
 }
-
