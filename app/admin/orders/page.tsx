@@ -1,16 +1,14 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Download, Search, Filter, Calendar, Truck, PackageCheck, Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useOrderFilters } from "@/hooks/use-order-filters"
+import { 
+  OrdersPageHeader,
+  OrdersStats,
+  OrdersFilterSection,
+  OrdersTable
+} from "@/components/admin"
 
+// Mock data - Developer có thể thay thế bằng API call
 const mockOrders = [
   {
     id: "ORD-08214",
@@ -86,194 +84,56 @@ const mockOrders = [
   },
 ]
 
-const statusOptions = ["Tất cả", "Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"]
-
-const statusBadgeStyles: Record<string, string> = {
-  "Đang xử lý": "bg-yellow-100 text-yellow-700 border-yellow-200",
-  "Đang giao": "bg-blue-100 text-blue-700 border-blue-200",
-  "Đã giao": "bg-green-100 text-green-700 border-green-200",
-  "Đã hủy": "bg-red-100 text-red-700 border-red-200",
-}
-
-const statHighlights = [
-  { label: "Đơn hàng hôm nay", value: 42, change: "+8.4%", icon: PackageCheck, tone: "text-primary" },
-  { label: "Đang giao", value: 16, change: "+2 vận đơn mới", icon: Truck, tone: "text-blue-600" },
-  { label: "Chờ xử lý", value: 9, change: "Ưu tiên xử lý", icon: Clock, tone: "text-amber-600" },
-]
-
 export default function AdminOrdersPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [activeStatus, setActiveStatus] = useState("Tất cả")
-  const [channel, setChannel] = useState("Tất cả kênh")
+  const { filterState, filteredOrders, statusOptions, channelOptions, actions } = useOrderFilters(mockOrders)
 
-  const filteredOrders = useMemo(() => {
-    return mockOrders.filter((order) => {
-      const matchesSearch =
-        order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = activeStatus === "Tất cả" || order.status === activeStatus
-      const matchesChannel = channel === "Tất cả kênh" || channel === "Website"
+  // Handler functions - có thể assign cho từng developer khác nhau
+  const handleExportReport = () => {
+    // Developer A: Implement export report logic
+    console.log('Export report')
+  }
 
-      return matchesSearch && matchesStatus && matchesChannel
-    })
-  }, [searchTerm, activeStatus, channel])
+  const handleDateReport = () => {
+    // Developer B: Implement date report logic  
+    console.log('Date report')
+  }
+
+  const handleAdvancedFilter = () => {
+    // Developer C: Implement advanced filter logic
+    console.log('Advanced filter')
+  }
+
+  const handleOrderClick = (orderId: string) => {
+    // Developer D: Implement order detail view logic
+    console.log('Order detail:', orderId)
+  }
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="space-y-8 px-4 py-6 sm:p-6 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h1>
-            <p className="text-muted-foreground mt-2">Theo dõi trạng thái xử lý và vận chuyển đơn hàng theo thời gian thực.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:self-end">
-            <Button variant="outline" className="gap-2 sm:w-auto">
-              <Calendar className="w-4 h-4" />
-              Báo cáo theo ngày
-            </Button>
-            <Button className="gap-2 sm:w-auto">
-              <Download className="w-4 h-4" />
-              Xuất báo cáo
-            </Button>
-          </div>
-        </div>
+      <div className="space-y-6 sm:space-y-8 px-4 py-6 sm:p-6 lg:p-8">
+        
+        <OrdersPageHeader 
+          onExportReport={handleExportReport}
+          onDateReport={handleDateReport}
+        />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {statHighlights.map((stat) => (
-            <Card key={stat.label} className="border border-border/80 rounded-2xl shadow-sm bg-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-                <stat.icon className={`h-5 w-5 ${stat.tone}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                <p className="text-sm text-muted-foreground mt-2">{stat.change}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <OrdersStats />
 
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between xl:flex-1">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Tìm theo mã đơn, tên khách hàng..."
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="outline" className="gap-2 sm:w-auto">
-                <Filter className="w-4 h-4" />
-                Bộ lọc nâng cao
-              </Button>
-            </div>
+        <OrdersFilterSection
+          filterState={filterState}
+          actions={actions}
+          statusOptions={statusOptions}
+          channelOptions={channelOptions}
+          filteredCount={filteredOrders.length}
+          totalCount={mockOrders.length}
+          onAdvancedFilter={handleAdvancedFilter}
+        />
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:flex-1 xl:justify-end">
-              <Select value={channel} onValueChange={(value) => setChannel(value)}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Kênh bán" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Tất cả kênh">Tất cả kênh</SelectItem>
-                  <SelectItem value="Website">Website</SelectItem>
-                  <SelectItem value="Cửa hàng">Cửa hàng</SelectItem>
-                </SelectContent>
-              </Select>
-              <Tabs value={activeStatus} onValueChange={(value) => setActiveStatus(value)}>
-                <TabsList className="w-full justify-start gap-1 overflow-x-auto rounded-lg border border-border/60 bg-muted/30 p-1">
-                  {statusOptions.map((status) => (
-                    <TabsTrigger key={status} value={status}>
-                      {status}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
+        <OrdersTable 
+          orders={filteredOrders}
+          onOrderClick={handleOrderClick}
+        />
 
-          <div className="border border-dashed border-border/80 rounded-xl p-4 text-sm text-muted-foreground flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              Đang hiển thị <strong>{filteredOrders.length}</strong> trên tổng <strong>{mockOrders.length}</strong> đơn hàng.
-            </span>
-            <Button variant="ghost" size="sm" className="self-start sm:self-auto">
-              Đặt lại bộ lọc
-            </Button>
-          </div>
-
-          <div className="border border-border rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-muted/40">
-              <p className="text-sm text-muted-foreground">Danh sách đơn hàng gần đây</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    Xem theo
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Theo ngày tạo</DropdownMenuItem>
-                  <DropdownMenuItem>Theo giá trị đơn</DropdownMenuItem>
-                  <DropdownMenuItem>Theo trạng thái</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <ScrollArea className="h-[420px] sm:h-[500px] xl:h-[560px]">
-              <div className="w-full overflow-x-auto">
-                <table className="min-w-[720px] w-full">
-                  <thead className="text-left text-sm text-muted-foreground bg-muted/20">
-                    <tr>
-                      <th className="px-6 py-3 font-medium">Mã đơn</th>
-                      <th className="px-6 py-3 font-medium">Khách hàng</th>
-                      <th className="px-6 py-3 font-medium">Liên hệ</th>
-                      <th className="px-6 py-3 font-medium">Giá trị</th>
-                      <th className="px-6 py-3 font-medium">Ngày</th>
-                      <th className="px-6 py-3 font-medium">Trạng thái</th>
-                      <th className="px-6 py-3 font-medium text-right">Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOrders.map((order) => (
-                      <tr key={order.id} className="border-t border-border/60 hover:bg-muted/40 transition">
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-primary">{order.id}</span>
-                            <span className="text-xs text-muted-foreground">{order.address}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-foreground">{order.customer}</p>
-                          <p className="text-xs text-muted-foreground">{order.payment}</p>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">
-                          <p>{order.email}</p>
-                          <p>{order.phone}</p>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-foreground">
-                          {order.total.toLocaleString("vi-VN")}₫
-                          <span className="block text-xs text-muted-foreground">{order.items} sản phẩm</span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{order.date}</td>
-                        <td className="px-6 py-4">
-                          <Badge variant="secondary" className={`${statusBadgeStyles[order.status] ?? ""} border`}>
-                            {order.status}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <Button size="sm" variant="outline">
-                            Xem chi tiết
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </ScrollArea>
-          </div>
-        </div>
       </div>
     </div>
   )

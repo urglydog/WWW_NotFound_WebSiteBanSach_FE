@@ -44,7 +44,7 @@ export function CartSidebar() {
               {state.items.map((item) => (
                 <div key={item.book.id} className="flex gap-4 pb-4 border-b border-border">
                   {/* Image */}
-                  <div className="w-16 h-24 bg-muted rounded flex-shrink-0 flex items-center justify-center">
+                  <div className="w-16 h-24 bg-muted rounded shrink-0 flex items-center justify-center">
                     <img
                       src={item.book.image || "/placeholder.svg"}
                       alt={item.book.title}
