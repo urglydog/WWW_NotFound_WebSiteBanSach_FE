@@ -30,6 +30,13 @@ export { CategoryPerformanceTable } from "./category-performance-table"
 export { WeeklyRevenueChart } from "./weekly-revenue-chart"
 export { RevenuePageHeader } from "./revenue-page-header"
 
+// Admin Components - Users Management
+export { UsersSearchFilters } from "./users-search-filters"
+export { UsersTable } from "./users-table"
+export { UsersCardView } from "./users-card-view"
+export { UsersPageHeader } from "./users-page-header"
+export { UsersStats } from "./users-stats"
+
 // Admin Components - Shared Layout
 export { AdminSidebar } from "./sidebar"
 export { PageHeader } from "./page-header"
