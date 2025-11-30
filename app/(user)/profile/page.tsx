@@ -30,7 +30,7 @@ const mockWishlist = [
 export default function ProfilePage() {
   const [form] = Form.useForm()
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = false
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams?.get("tab") || "info")

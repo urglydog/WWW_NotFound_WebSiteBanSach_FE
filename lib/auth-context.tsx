@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { authService } from "@/lib/services"
 
 export interface User {
   id: string
@@ -75,56 +76,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (identifier: string, password: string) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      const normalizedIdentifier = identifier.trim().toLowerCase()
-      const normalizedPassword = password.trim()
-      if (!normalizedIdentifier || !normalizedPassword) {
-        throw new Error("INVALID_CREDENTIALS")
-      }
-
-      const response = await fetch("/db.json")
-      if (!response.ok) {
-        throw new Error("FAILED_TO_FETCH_USERS")
-      }
-
-      const data = await response.json()
-      const users = Array.isArray(data?.users) ? data.users : []
-
-      const matchedUser = users.find((user: any) => {
-        if (!user) return false
-        const email = typeof user.email === "string" ? user.email.trim().toLowerCase() : ""
-        const username = typeof user.username === "string" ? user.username.trim().toLowerCase() : ""
-        return normalizedIdentifier === email || normalizedIdentifier === username
-      })
-
-      if (!matchedUser) {
-        throw new Error("INVALID_CREDENTIALS")
-      }
-
-      const storedPassword = typeof matchedUser.password === "string" ? matchedUser.password.trim() : ""
-      if (storedPassword !== normalizedPassword) {
-        throw new Error("INVALID_CREDENTIALS")
-      }
-
-      const role = typeof matchedUser.role === "string" ? matchedUser.role.toUpperCase() : "CUSTOMER"
-
+      const response = await authService.login({ identifier, password })
+      
       const authenticatedUser: User = {
-        id: String(matchedUser.id ?? ""),
-        email: matchedUser.email ?? "",
-        fullName: matchedUser.fullName ?? matchedUser.username ?? matchedUser.email?.split("@")[0] ?? "",
-        role,
-        username: matchedUser.username,
-        phone: matchedUser.phone,
-        avatar: matchedUser.avatar,
+        id: response.user.id,
+        email: response.user.email,
+        fullName: response.user.fullName ?? response.user.username ?? response.user.email.split("@")[0],
+        role: response.user.role.toUpperCase(),
+        username: response.user.username,
+        avatar: response.user.avatar,
         createdAt: new Date().toISOString(),
       }
 
-      setUser(authenticatedUser)
+      // Store token and user
+      localStorage.setItem("authToken", response.token)
+      if (response.refreshToken) {
+        localStorage.setItem("refreshToken", response.refreshToken)
+      }
       localStorage.setItem("user", JSON.stringify(authenticatedUser))
+      setUser(authenticatedUser)
+      
       return authenticatedUser
     } catch (error) {
+      if (error instanceof Error) {
+        // Map API errors to existing error codes
+        if (error.message.includes("401") || error.message.includes("credentials")) {
+          throw new Error("INVALID_CREDENTIALS")
+        }
+      }
       throw error
     } finally {
       setIsLoading(false)
@@ -142,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true)
     try {
+      // Validate credential format before sending to API
       const payload = decodeGoogleCredential(credential)
       const email = typeof payload?.email === "string" ? payload.email : ""
       const emailVerified = typeof payload?.email_verified === "boolean" ? payload.email_verified : true
@@ -154,43 +134,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("GOOGLE_SIGNIN_EMAIL_NOT_VERIFIED")
       }
 
-      let matchedUser: any = null
-      try {
-        const response = await fetch("/db.json")
-        if (response.ok) {
-          const data = await response.json()
-          const users = Array.isArray(data?.users) ? data.users : []
-          matchedUser = users.find((user: any) => {
-            if (!user?.email) return false
-            return String(user.email).trim().toLowerCase() === email.trim().toLowerCase()
-          })
-        }
-      } catch {
-        // Ignore fetch errors; fallback to Google payload
-      }
-
-      const role = typeof matchedUser?.role === "string" ? matchedUser.role.toUpperCase() : "CUSTOMER"
-      const fullName =
-        typeof payload?.name === "string" && payload.name
-          ? payload.name
-          : typeof matchedUser?.fullName === "string" && matchedUser.fullName
-            ? matchedUser.fullName
-            : email.split("@")[0] ?? ""
+      // Call API service
+      const response = await authService.loginWithGoogle({ credential })
 
       const authenticatedUser: User = {
-        id: String(matchedUser?.id ?? payload?.sub ?? crypto.randomUUID()),
-        email,
-        fullName,
-        role,
-        username: matchedUser?.username ?? (typeof payload?.given_name === "string" ? payload.given_name : undefined),
-        phone: matchedUser?.phone,
-        avatar: typeof payload?.picture === "string" ? payload.picture : matchedUser?.avatar,
+        id: response.user.id,
+        email: response.user.email,
+        fullName: response.user.fullName ?? response.user.username ?? response.user.email.split("@")[0],
+        role: response.user.role.toUpperCase(),
+        username: response.user.username,
+        avatar: response.user.avatar,
         createdAt: new Date().toISOString(),
       }
 
-      setUser(authenticatedUser)
+      // Store token and user
+      localStorage.setItem("authToken", response.token)
+      if (response.refreshToken) {
+        localStorage.setItem("refreshToken", response.refreshToken)
+      }
       localStorage.setItem("user", JSON.stringify(authenticatedUser))
+      setUser(authenticatedUser)
+      
       return authenticatedUser
+    } catch (error) {
+      if (error instanceof Error) {
+        // Re-throw validation errors as-is
+        if (error.message.startsWith("GOOGLE_SIGNIN_")) {
+          throw error
+        }
+        // Map API errors
+        if (error.message.includes("401") || error.message.includes("credentials")) {
+          throw new Error("GOOGLE_SIGNIN_INVALID_TOKEN")
+        }
+      }
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -199,20 +176,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (email: string, password: string, fullName: string) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const mockUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
+      const response = await authService.signup({
         email,
+        password,
         fullName,
-        role: "CUSTOMER",
+        username: email.split("@")[0],
+      })
+
+      const authenticatedUser: User = {
+        id: response.user.id,
+        email: response.user.email,
+        fullName: response.user.fullName ?? response.user.username ?? response.user.email.split("@")[0],
+        role: response.user.role.toUpperCase(),
+        username: response.user.username,
+        avatar: response.user.avatar,
         createdAt: new Date().toISOString(),
       }
 
-      setUser(mockUser)
-      localStorage.setItem("user", JSON.stringify(mockUser))
-      return mockUser
+      // Store token and user
+      localStorage.setItem("authToken", response.token)
+      if (response.refreshToken) {
+        localStorage.setItem("refreshToken", response.refreshToken)
+      }
+      localStorage.setItem("user", JSON.stringify(authenticatedUser))
+      setUser(authenticatedUser)
+      
+      return authenticatedUser
     } finally {
       setIsLoading(false)
     }
@@ -221,6 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
+    localStorage.removeItem("authToken")
+    localStorage.removeItem("refreshToken")
   }
 
   return (

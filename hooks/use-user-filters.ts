@@ -59,6 +59,10 @@ export function useUserFilters(initialUsers: User[]) {
 
   // Filtered and sorted users
   const filteredUsers = useMemo(() => {
+    if (!users || users.length === 0) {
+      return []
+    }
+    
     let filtered = users.filter((user) => {
       const matchesSearch =
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -128,12 +132,26 @@ export function useUserFilters(initialUsers: User[]) {
 
   // Statistics
   const stats = useMemo(() => {
+    if (!users || users.length === 0) {
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
+        bannedUsers: 0,
+        totalRevenue: 0,
+        totalOrders: 0,
+        avgOrderValue: 0,
+        avgRevenuePerUser: 0,
+      }
+    }
+    
     const totalRevenue = users.reduce((sum, user) => sum + user.totalSpent, 0)
     const totalOrders = users.reduce((sum, user) => sum + user.orders, 0)
     
     return {
       totalUsers: users.length,
       activeUsers: users.filter(u => u.status === "active" || !u.status).length,
+      inactiveUsers: users.filter(u => u.status === "inactive").length,
       bannedUsers: users.filter(u => u.status === "banned").length,
       totalRevenue,
       totalOrders,
