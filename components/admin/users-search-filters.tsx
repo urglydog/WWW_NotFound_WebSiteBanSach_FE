@@ -14,10 +14,10 @@ interface DateRange {
 interface UsersSearchFiltersProps {
   searchTerm: string
   statusFilter: string
-  dateRange: DateRange | null
+  dateRange?: DateRange | null
   onSearchChange: (value: string) => void
   onStatusChange: (value: string) => void
-  onDateRangeChange: (range: DateRange | null) => void
+  onDateRangeChange?: (range: DateRange | null) => void
   onReset: () => void
   className?: string
 }
@@ -85,40 +85,42 @@ export function UsersSearchFilters({
             </div>
 
             {/* Date Range Filter */}
-            <div className="space-y-2 flex-1">
-              <label className="text-sm font-medium text-muted-foreground">
-                Ngày tham gia
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    type="date"
-                    value={dateRange?.from || ""}
-                    onChange={(e) => onDateRangeChange({
-                      from: e.target.value,
-                      to: dateRange?.to || ""
-                    })}
-                    className="pl-10"
-                    placeholder="Từ ngày"
-                  />
-                </div>
-                <span className="text-muted-foreground px-2">đến</span>
-                <div className="relative flex-1">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    type="date"
-                    value={dateRange?.to || ""}
-                    onChange={(e) => onDateRangeChange({
-                      from: dateRange?.from || "",
-                      to: e.target.value
-                    })}
-                    className="pl-10"
-                    placeholder="Đến ngày"
-                  />
+            {onDateRangeChange && (
+              <div className="space-y-2 flex-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Ngày tham gia
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      type="date"
+                      value={dateRange?.from || ""}
+                      onChange={(e) => onDateRangeChange({
+                        from: e.target.value,
+                        to: dateRange?.to || ""
+                      })}
+                      className="pl-10"
+                      placeholder="Từ ngày"
+                    />
+                  </div>
+                  <span className="text-muted-foreground px-2">đến</span>
+                  <div className="relative flex-1">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      type="date"
+                      value={dateRange?.to || ""}
+                      onChange={(e) => onDateRangeChange({
+                        from: dateRange?.from || "",
+                        to: e.target.value
+                      })}
+                      className="pl-10"
+                      placeholder="Đến ngày"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Active Filters & Actions */}
@@ -152,7 +154,7 @@ export function UsersSearchFilters({
                 </Badge>
               )}
               
-              {dateRange && (dateRange.from || dateRange.to) && (
+              {dateRange && (dateRange.from || dateRange.to) && onDateRangeChange && (
                 <Badge variant="secondary" className="gap-1">
                   <Calendar className="w-3 h-3" />
                   Ngày: {dateRange.from} - {dateRange.to}
