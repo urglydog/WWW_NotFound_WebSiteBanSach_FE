@@ -2,7 +2,7 @@
 
 import { toast } from "sonner"
 import { useUserFilters } from "@/hooks/use-user-filters"
-import { useMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   UsersPageHeader,
   UsersStats,
@@ -12,15 +12,15 @@ import {
 } from "@/components/admin"
 
 export default function AdminUsersPage() {
-  const isMobile = useMobile()
+  const isMobile = useIsMobile()
   const {
     users,
     filteredUsers,
-    filters,
+    filterState,
     stats,
-    actions,
-    pagination
-  } = useUserFilters()
+    filterActions,
+    userActions,
+  } = useUserFilters([])
 
   // Event handlers
   const handleAddUser = () => {
@@ -49,30 +49,28 @@ export default function AdminUsersPage() {
 
         {/* Search and Filters */}
         <UsersSearchFilters
-          searchTerm={filters.searchTerm}
-          statusFilter={filters.statusFilter}
-          dateRange={filters.dateRange}
-          onSearchChange={actions.setSearchTerm}
-          onStatusChange={actions.setStatusFilter}
-          onDateRangeChange={actions.setDateRange}
-          onReset={actions.resetFilters}
+          searchTerm={filterState.searchTerm}
+          statusFilter={filterState.statusFilter}
+          onSearchChange={filterActions.setSearchTerm}
+          onStatusChange={filterActions.setStatusFilter}
+          onReset={filterActions.resetFilters}
         />
 
         {/* Users Display */}
         {isMobile ? (
           <UsersCardView
             users={filteredUsers}
-            onDelete={actions.deleteUser}
-            onBan={actions.banUser}
-            onUnban={actions.unbanUser}
+            onDelete={userActions.deleteUser}
+            onBan={userActions.banUser}
+            onUnban={userActions.unbanUser}
             onView={handleView}
           />
         ) : (
           <UsersTable
             users={filteredUsers}
-            onDelete={actions.deleteUser}
-            onBan={actions.banUser}
-            onUnban={actions.unbanUser}
+            onDelete={userActions.deleteUser}
+            onBan={userActions.banUser}
+            onUnban={userActions.unbanUser}
             onView={handleView}
           />
         )}
@@ -82,11 +80,6 @@ export default function AdminUsersPage() {
           <p>
             Hiển thị {filteredUsers.length} / {users.length} người dùng
           </p>
-          {pagination.totalPages > 1 && (
-            <p>
-              Trang {pagination.currentPage} / {pagination.totalPages}
-            </p>
-          )}
         </div>
       </div>
     </div>
