@@ -128,10 +128,10 @@ export const booksService = {
    */
   async searchBooks(
     keyword: string,
-    filters?: Omit<BookFilters, "search">
+    filters?: Omit<BookFilters, "keyword">
   ): Promise<PaginatedResponse<Book>> {
     return apiClient.get<PaginatedResponse<Book>>("/books/search", {
-      search: keyword,
+      keyword: keyword,
       ...filters,
     });
   },
