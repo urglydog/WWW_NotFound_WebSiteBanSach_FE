@@ -37,19 +37,6 @@ export default function ProductsPage() {
           page: currentPage - 1,
           pageSize: itemsPerPage,
         });
-        console.log("=== FULL API RESPONSE ===");
-        console.log(
-          "First book full object:",
-          JSON.stringify(response.content?.[0], null, 2)
-        );
-        console.log("API Response Books:", response.content);
-        response.content?.forEach((book, index) => {
-          console.log(
-            `Book ${index + 1} - Title: ${book.title}, stockQuantity: ${
-              book.stockQuantity
-            }, type: ${typeof book.stockQuantity}`
-          );
-        });
         setBooks(response.content || []);
         setTotalElements(response.totalElements || 0);
 
@@ -76,7 +63,7 @@ export default function ProductsPage() {
     // Filter by category
     if (filters.categories.length > 0) {
       result = result.filter((book) =>
-        book.categoryNames?.some((cat) => filters.categories.includes(cat))
+        book.categoryId?.some((catId) => filters.categories.includes(catId))
       );
     }
 
