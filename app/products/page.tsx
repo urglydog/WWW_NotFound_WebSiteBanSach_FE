@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ProductFilters } from "@/components/products/product-filters";
 import { ProductCard } from "@/components/products/product-card";
-import { mockBooks } from "@/lib/mock-data";
+import { booksService, type Book } from "@/lib/services/books.service";
 import type { FilterOptions } from "@/lib/types";
 import { Filter } from "lucide-react";
 
 const defaultFilters: FilterOptions = {
   categories: [],
-  priceRange: [0, 500000],
+  priceRange: [0, 10000000],
   ratings: [],
   sortBy: "popular",
 };
@@ -20,30 +20,76 @@ export default function ProductsPage() {
   const [filters, setFilters] = useState<FilterOptions>(defaultFilters);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const itemsPerPage = 9;
+
+  // Fetch books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await booksService.getBooks({
+          page: currentPage - 1,
+          pageSize: itemsPerPage,
+        });
+        console.log("=== FULL API RESPONSE ===");
+        console.log(
+          "First book full object:",
+          JSON.stringify(response.content?.[0], null, 2)
+        );
+        console.log("API Response Books:", response.content);
+        response.content?.forEach((book, index) => {
+          console.log(
+            `Book ${index + 1} - Title: ${book.title}, stockQuantity: ${
+              book.stockQuantity
+            }, type: ${typeof book.stockQuantity}`
+          );
+        });
+        setBooks(response.content || []);
+        setTotalElements(response.totalElements || 0);
+
+        // Calculate total pages based on totalElements and itemsPerPage
+        const calculatedPages = Math.ceil(
+          (response.totalElements || 0) / itemsPerPage
+        );
+        setTotalPages(calculatedPages || response.totalPages || 1);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch books");
+        console.error("Error fetching books:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, [currentPage]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let result = [...mockBooks];
+    let result = [...books];
 
     // Filter by category
     if (filters.categories.length > 0) {
       result = result.filter((book) =>
-        filters.categories.includes(book.category)
+        book.categoryNames?.some((cat) => filters.categories.includes(cat))
       );
     }
 
-    // Filter by price range
-    result = result.filter(
-      (book) =>
-        book.price >= filters.priceRange[0] &&
-        book.price <= filters.priceRange[1]
-    );
+    // Filter by price range - handle missing prices
+    result = result.filter((book) => {
+      const price = book.price || 0;
+      return price >= filters.priceRange[0] && price <= filters.priceRange[1];
+    });
 
     // Filter by rating
     if (filters.ratings.length > 0) {
       result = result.filter((book) =>
-        filters.ratings.some((rating) => book.rating >= rating)
+        filters.ratings.some((rating) => (book.averageRating || 0) >= rating)
       );
     }
 
@@ -56,24 +102,18 @@ export default function ProductsPage() {
         result.sort((a, b) => b.price - a.price);
         break;
       case "rating":
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
         break;
       case "newest":
         result.reverse();
         break;
       case "popular":
       default:
-        result.sort((a, b) => b.reviews - a.reviews);
+        result.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
     }
 
     return result;
-  }, [filters]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  }, [books, filters]);
 
   const handleReset = () => {
     setFilters(defaultFilters);
@@ -92,7 +132,7 @@ export default function ProductsPage() {
               Cửa hàng sách
             </h1>
             <p className="text-muted-foreground">
-              {filteredProducts.length} sách tìm thấy
+              {totalElements} sách tìm thấy
             </p>
           </div>
         </div>
@@ -133,12 +173,43 @@ export default function ProductsPage() {
               )}
 
               {/* Products Grid */}
-              {filteredProducts.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Đang tải...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="text-center">
+                    <p className="text-red-500 mb-2">Lỗi: {error}</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                    >
+                      Thử lại
+                    </button>
+                  </div>
+                </div>
+              ) : filteredProducts.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                    {currentProducts.map((book) => (
-                      <ProductCard key={book.id} book={book} />
-                    ))}
+                    {filteredProducts
+                      .slice(0, itemsPerPage)
+                      .map((book, index) => {
+                        try {
+                          return (
+                            <ProductCard
+                              key={book.id || `book-${index}`}
+                              book={book}
+                            />
+                          );
+                        } catch (err) {
+                          console.error("Error rendering book:", book, err);
+                          return null;
+                        }
+                      })}
                   </div>
 
                   {/* Pagination */}
