@@ -24,7 +24,6 @@ export function ProductCard({ book }: ProductCardProps) {
       : 0;
   // Check stock: stockQuantity must be a number > 0
   const inStock = (book?.stockQuantity ?? 0) > 0;
-
   return (
     <Link href={`/products/${bookId}`}>
       <div className="group cursor-pointer h-full flex flex-col">
