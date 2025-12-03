@@ -1,44 +1,67 @@
-"use client"
+"use client";
 
-import type { FilterOptions } from "@/lib/types"
-import { categories } from "@/lib/mock-data"
-import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import type { FilterOptions } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  categoriesService,
+  type Category,
+} from "@/lib/services/categories.service";
 
 interface ProductFiltersProps {
-  filters: FilterOptions
-  onFiltersChange: (filters: FilterOptions) => void
-  onReset: () => void
+  filters: FilterOptions;
+  onFiltersChange: (filters: FilterOptions) => void;
+  onReset: () => void;
 }
 
-export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFiltersProps) {
-  const handleCategoryToggle = (category: string) => {
-    const newCategories = filters.categories.includes(category)
-      ? filters.categories.filter((c) => c !== category)
-      : [...filters.categories, category]
-    onFiltersChange({ ...filters, categories: newCategories })
-  }
+export function ProductFilters({
+  filters,
+  onFiltersChange,
+  onReset,
+}: ProductFiltersProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await categoriesService.getCategories(false);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleCategoryToggle = (categoryId: string) => {
+    const newCategories = filters.categories.includes(categoryId)
+      ? filters.categories.filter((c) => c !== categoryId)
+      : [...filters.categories, categoryId];
+    onFiltersChange({ ...filters, categories: newCategories });
+  };
 
   const handleSortChange = (sortBy: FilterOptions["sortBy"]) => {
-    onFiltersChange({ ...filters, sortBy })
-  }
+    onFiltersChange({ ...filters, sortBy });
+  };
 
   const handlePriceChange = (min: number, max: number) => {
-    onFiltersChange({ ...filters, priceRange: [min, max] })
-  }
+    onFiltersChange({ ...filters, priceRange: [min, max] });
+  };
 
   const handleRatingToggle = (rating: number) => {
     const newRatings = filters.ratings.includes(rating)
       ? filters.ratings.filter((r) => r !== rating)
-      : [...filters.ratings, rating]
-    onFiltersChange({ ...filters, ratings: newRatings })
-  }
+      : [...filters.ratings, rating];
+    onFiltersChange({ ...filters, ratings: newRatings });
+  };
 
   const hasActiveFilters =
     filters.categories.length > 0 ||
     filters.ratings.length > 0 ||
     filters.priceRange[0] !== 0 ||
-    filters.priceRange[1] !== 500000
+    filters.priceRange[1] !== 500000;
 
   return (
     <div className="space-y-6">
@@ -46,7 +69,11 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground">Bộ lọc</h3>
         {hasActiveFilters && (
-          <Button onClick={onReset} variant="outline" className="flex items-center gap-1 bg-transparent">
+          <Button
+            onClick={onReset}
+            variant="outline"
+            className="flex items-center gap-1 bg-transparent"
+          >
             <X size={16} /> Xóa
           </Button>
         )}
@@ -63,7 +90,10 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
             { value: "price-high" as const, label: "Giá: Cao đến thấp" },
             { value: "rating" as const, label: "Đánh giá cao nhất" },
           ].map((sort) => (
-            <label key={sort.value} className="flex items-center gap-2 cursor-pointer">
+            <label
+              key={sort.value}
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <input
                 type="radio"
                 name="sort"
@@ -83,14 +113,17 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
         <h4 className="font-medium text-foreground mb-3">Danh mục</h4>
         <div className="space-y-2">
           {categories.map((category) => (
-            <label key={category} className="flex items-center gap-2 cursor-pointer">
+            <label
+              key={category.id}
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <input
                 type="checkbox"
-                checked={filters.categories.includes(category)}
-                onChange={() => handleCategoryToggle(category)}
+                checked={filters.categories.includes(category.id)}
+                onChange={() => handleCategoryToggle(category.id)}
                 className="rounded"
               />
-              <span className="text-sm text-foreground">{category}</span>
+              <span className="text-sm text-foreground">{category.name}</span>
             </label>
           ))}
         </div>
@@ -107,7 +140,9 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
               min="0"
               max={filters.priceRange[1]}
               value={filters.priceRange[0]}
-              onChange={(e) => handlePriceChange(Number(e.target.value), filters.priceRange[1])}
+              onChange={(e) =>
+                handlePriceChange(Number(e.target.value), filters.priceRange[1])
+              }
               className="w-full px-3 py-2 border border-border rounded-md text-sm"
               placeholder="0"
             />
@@ -119,7 +154,9 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
               min={filters.priceRange[0]}
               max="500000"
               value={filters.priceRange[1]}
-              onChange={(e) => handlePriceChange(filters.priceRange[0], Number(e.target.value))}
+              onChange={(e) =>
+                handlePriceChange(filters.priceRange[0], Number(e.target.value))
+              }
               className="w-full px-3 py-2 border border-border rounded-md text-sm"
               placeholder="500000"
             />
@@ -132,18 +169,23 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
         <h4 className="font-medium text-foreground mb-3">Đánh giá</h4>
         <div className="space-y-2">
           {[5, 4, 3].map((rating) => (
-            <label key={rating} className="flex items-center gap-2 cursor-pointer">
+            <label
+              key={rating}
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <input
                 type="checkbox"
                 checked={filters.ratings.includes(rating)}
                 onChange={() => handleRatingToggle(rating)}
                 className="rounded"
               />
-              <span className="text-sm text-foreground">{rating} sao trở lên</span>
+              <span className="text-sm text-foreground">
+                {rating} sao trở lên
+              </span>
             </label>
           ))}
         </div>
       </div>
     </div>
-  )
+  );
 }
