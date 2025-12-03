@@ -3,11 +3,19 @@
  * Base configuration for making HTTP requests to the backend
  */
 
+// Get API URL from environment variables
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 
-// Debug: Log the API URL
-if (typeof window !== "undefined") {
-  console.log("API_BASE_URL:", API_BASE_URL)
+// Validate API URL in development
+if (process.env.NODE_ENV === "development") {
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    console.warn(
+      "⚠️ NEXT_PUBLIC_API_URL is not set in .env file. Using default: http://localhost:8080/api"
+    )
+    console.warn("Please create a .env file with: NEXT_PUBLIC_API_URL=http://localhost:8080/api")
+  } else {
+    console.log("✅ API Base URL:", API_BASE_URL)
+  }
 }
 
 export interface ApiResponse<T> {

@@ -40,6 +40,7 @@ interface AuthContextType {
   loginWithGoogle: (credential: string) => Promise<User>
   logout: () => void
   isAuthenticated: boolean
+  setUserState: (user: User | null) => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -224,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithGoogle,
         logout,
         isAuthenticated: !!user,
+        setUserState: setUser,
       }}
     >
       {children}
