@@ -8,26 +8,24 @@ import { apiClient, PaginatedResponse } from "../api-client"
 export interface Book {
   id: string
   title: string
-  author: string
-  category: string
-  categoryId: string
-  price: number
-  discount?: number
-  description?: string
-  publisher?: string
-  publishDate?: string
-  pages?: number
-  language?: string
   isbn?: string
-  inStock: boolean
+  price: number
+  discountPrice: number
+  importPrice: number
   stockQuantity: number
-  image: string
-  images?: string[]
-  reviews: number
-  rating?: number
-  sold?: number
+  publishDate?: string
+  description?: string
+  status: string
   createdAt?: string
   updatedAt?: string
+  createdBy: string
+  updatedBy: string
+  authorNames: string[]
+  categoryNames: string[]
+  categoryId: string[]  // Thanh Hiền viết thêm API get
+  imageUrls?: string[]
+  reviews: number
+  averageRating?: number
 }
 
 export interface CreateBookRequest {
@@ -76,7 +74,8 @@ export const booksService = {
    * Get a single book by ID
    */
   async getBookById(id: string): Promise<Book> {
-    return apiClient.get<Book>(`/books/${id}`)
+    const response = await apiClient.get<{ code: number; message: string; result: Book }>(`/books/${id}`)
+    return response.result
   },
 
   /**
