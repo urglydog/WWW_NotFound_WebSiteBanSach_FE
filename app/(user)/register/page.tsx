@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 
 import { UserLayout } from "@/components/layout/user-layout"
 import { Form, Input, Button, Card, message, Checkbox } from "antd"
@@ -7,10 +7,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { authService } from "@/lib/services"
+import { useAuth } from "@/lib/auth-context"
 
 export default function RegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const { setUserState } = useAuth()
 
   const handleRegister = async (values: any) => {
     // Validate required fields
@@ -41,23 +43,27 @@ export default function RegisterPage() {
         phoneNumber: values.phone.trim(),
       })
 
+      // Chuẩn hóa user giống AuthContext
+      const authenticatedUser = {
+        id: response.user.id,
+        email: response.user.email,
+        fullName: response.user.fullName ?? response.user.username ?? response.user.email.split("@")[0],
+        role: response.user.role.toUpperCase(),
+        username: response.user.username,
+        phone: response.user.phoneNumber,
+        avatar: response.user.avatar,
+        createdAt: new Date().toISOString(),
+      }
+
       // Lưu token và thông tin user
       localStorage.setItem("authToken", response.token)
       if (response.refreshToken) {
         localStorage.setItem("refreshToken", response.refreshToken)
       }
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          id: response.user.id,
-          username: response.user.username,
-          email: response.user.email,
-          fullName: response.user.fullName,
-          phone: response.user.phoneNumber,
-          role: response.user.role,
-          avatar: response.user.avatar,
-        }),
-      )
+      localStorage.setItem("user", JSON.stringify(authenticatedUser))
+
+      // Cập nhật context để header/account hiển thị ngay
+      setUserState(authenticatedUser)
 
       message.success("Đăng ký thành công")
       router.push("/")

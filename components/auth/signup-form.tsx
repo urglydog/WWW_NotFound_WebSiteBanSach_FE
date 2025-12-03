@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 export function SignupForm() {
   const [formData, setFormData] = useState({
@@ -22,6 +23,7 @@ export function SignupForm() {
   const [showConfirm, setShowConfirm] = useState(false)
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const { setUserState } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,23 +80,27 @@ export function SignupForm() {
         phoneNumber: formData.phone.trim(),
       })
 
+      // Chuẩn hóa user giống AuthContext
+      const authenticatedUser = {
+        id: response.user.id,
+        email: response.user.email,
+        fullName: response.user.fullName ?? response.user.username ?? response.user.email.split("@")[0],
+        role: response.user.role.toUpperCase(),
+        username: response.user.username,
+        phone: response.user.phoneNumber,
+        avatar: response.user.avatar,
+        createdAt: new Date().toISOString(),
+      }
+
       // Lưu token và thông tin user
       localStorage.setItem("authToken", response.token)
       if (response.refreshToken) {
         localStorage.setItem("refreshToken", response.refreshToken)
       }
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          id: response.user.id,
-          username: response.user.username,
-          email: response.user.email,
-          fullName: response.user.fullName,
-          phone: response.user.phoneNumber,
-          role: response.user.role,
-          avatar: response.user.avatar,
-        }),
-      )
+      localStorage.setItem("user", JSON.stringify(authenticatedUser))
+
+      // Cập nhật context để header/account hiển thị ngay
+      setUserState(authenticatedUser)
 
       router.push("/")
     } catch (err: any) {
