@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { booksService, type Book } from "@/lib/services/books.service";
 import { ProductCard } from "@/components/products/product-card";
 import { SearchIcon, Filter, X } from "lucide-react";
+import { categoriesService, Category } from "@/lib/services";
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -20,7 +21,21 @@ export default function SearchPage() {
     category: "",
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [categories, setCategories] = useState<string[]>([]);
+
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await categoriesService.getCategories(false);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Fetch search results
   useEffect(() => {
@@ -35,29 +50,12 @@ export default function SearchPage() {
           });
 
           setResults(response.content || []);
-
-          // Extract unique categories from results
-          const uniqueCategories = Array.from(
-            new Set(
-              response.content?.flatMap((book) => book.categoryNames || []) ||
-                []
-            )
-          );
-          setCategories(uniqueCategories);
         } else {
           const response = await booksService.getBooks({
             page: 0,
             pageSize: 50,
           });
           setResults(response.content || []);
-
-          const uniqueCategories = Array.from(
-            new Set(
-              response.content?.flatMap((book) => book.categoryNames || []) ||
-                []
-            )
-          );
-          setCategories(uniqueCategories);
         }
       } catch (error) {
         console.error("Error fetching search results:", error);
@@ -73,7 +71,7 @@ export default function SearchPage() {
   // Filter results based on filters
   const filteredResults = results.filter((book) => {
     // Category filter
-    if (filters.category && !book.categoryNames?.includes(filters.category)) {
+    if (filters.category && !book.categoryId?.includes(filters.category)) {
       return false;
     }
 
@@ -169,21 +167,21 @@ export default function SearchPage() {
                       </label>
                       {categories.map((category) => (
                         <label
-                          key={category}
+                          key={category.id}
                           className="flex items-center gap-2 cursor-pointer"
                         >
                           <input
                             type="radio"
                             name="category"
-                            value={category}
-                            checked={filters.category === category}
+                            value={category.id}
+                            checked={filters.category === category.id}
                             onChange={() =>
-                              setFilters({ ...filters, category })
+                              setFilters({ ...filters, category: category.id })
                             }
                             className="rounded"
                           />
                           <span className="text-sm text-foreground">
-                            {category}
+                            {category.name}
                           </span>
                         </label>
                       ))}
@@ -290,8 +288,8 @@ export default function SearchPage() {
                     >
                       <option value="">Tất cả</option>
                       {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
                         </option>
                       ))}
                     </select>
