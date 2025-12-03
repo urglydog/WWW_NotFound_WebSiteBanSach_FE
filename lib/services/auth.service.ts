@@ -32,13 +32,6 @@ export interface AuthResponse {
   }
 }
 
-// Backend response wrapper
-interface BackendResponse<T> {
-  code: number
-  message: string
-  result: T
-}
-
 export interface GoogleAuthRequest {
   credential: string
 }
@@ -52,24 +45,25 @@ export const authService = {
       username: data.identifier,
       password: data.password,
     }
-    const response = await apiClient.post<BackendResponse<AuthResponse>>("/auth/login", requestBody)
-    return response.result
+    // apiClient đã tự unwrap { code, message, result } thành result
+    const response = await apiClient.post<AuthResponse>("/auth/login", requestBody)
+    return response
   },
 
   /**
    * Register a new user account
    */
   async signup(data: SignupRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<BackendResponse<AuthResponse>>("/auth/register", data)
-    return response.result
+    const response = await apiClient.post<AuthResponse>("/auth/register", data)
+    return response
   },
 
   /**
    * Login with Google OAuth
    */
   async loginWithGoogle(data: GoogleAuthRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<BackendResponse<AuthResponse>>("/auth/google", data)
-    return response.result
+    const response = await apiClient.post<AuthResponse>("/auth/google", data)
+    return response
   },
 
   /**
