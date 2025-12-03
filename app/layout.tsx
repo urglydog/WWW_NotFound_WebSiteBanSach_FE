@@ -12,7 +12,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Nhà Sách Online - Khám Phá Thế Giới Sách",
+  title: "Nhà Sách Online",
   description:
     "Nhà sách online hàng đầu Việt Nam. Mua sách, truyện, tạp chí với giá tốt nhất. Giao hàng nhanh, dịch vụ tốt.",
   generator: "v0.app",
