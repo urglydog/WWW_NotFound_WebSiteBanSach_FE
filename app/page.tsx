@@ -19,8 +19,13 @@ export default function Home() {
     const error = searchParams.get("error")
     const userParam = searchParams.get("user")
 
+    console.log("Google callback - token:", token ? "exists" : "missing")
+    console.log("Google callback - error:", error)
+    console.log("Google callback - userParam:", userParam ? "exists" : "missing")
+
     if (token) {
       // Lưu token do backend trả về sau khi đăng nhập Google
+      console.log("Saving authToken to localStorage:", token.substring(0, 20) + "...")
       localStorage.setItem("authToken", token)
 
       let normalizedUser: any = null
@@ -30,6 +35,7 @@ export default function Home() {
         try {
           // Decode URL-encoded JSON string
           const decodedUserParam = decodeURIComponent(userParam)
+          console.log("Decoded user param:", decodedUserParam.substring(0, 100) + "...")
           const parsed = JSON.parse(decodedUserParam) as {
             id?: string
             email?: string
@@ -51,33 +57,47 @@ export default function Home() {
             createdAt: new Date().toISOString(),
           }
 
+          console.log("Saving user to localStorage:", normalizedUser)
           localStorage.setItem("user", JSON.stringify(normalizedUser))
         } catch (e) {
           console.error("Failed to parse user info from Google callback:", e)
         }
+      } else {
+        console.warn("No user param in Google callback URL - backend may not be sending user info")
       }
 
       // Nếu có user, cập nhật AuthContext ngay lập tức
       if (normalizedUser) {
+        console.log("Updating AuthContext with user:", normalizedUser)
         setUserState(normalizedUser)
       } else {
+        console.warn("No normalizedUser - checking localStorage for existing user")
         // Fallback: Nếu không có user param, thử load từ localStorage (nếu đã có từ trước)
         const storedUser = localStorage.getItem("user")
         if (storedUser) {
           try {
             const parsed = JSON.parse(storedUser)
+            console.log("Loading user from localStorage:", parsed)
             setUserState(parsed)
           } catch (e) {
             console.error("Failed to load user from localStorage:", e)
           }
+        } else {
+          console.error("No user found in localStorage - Google login incomplete!")
         }
       }
+
+      // Verify token was saved
+      const savedToken = localStorage.getItem("authToken")
+      console.log("Token saved successfully:", savedToken ? savedToken.substring(0, 20) + "..." : "FAILED")
 
       // Chuyển về trang chủ và xóa token/error khỏi URL
       router.replace("/")
     } else if (error) {
       console.error("Google login error:", error)
       // TODO: hiển thị toast thông báo lỗi nếu cần
+    } else {
+      console.log("No token or error in URL - not a Google callback")
     }
   }, [router, searchParams, setUserState])
 
