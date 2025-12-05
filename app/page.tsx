@@ -8,6 +8,7 @@ import { RecommendationSection } from "@/components/recommendations/recommendati
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { authService } from "@/lib/services/auth.service"
 
 export default function Home() {
   const router = useRouter()
@@ -16,17 +17,25 @@ export default function Home() {
 
   useEffect(() => {
     const token = searchParams.get("token")
+    const refreshToken = searchParams.get("refreshToken")
     const error = searchParams.get("error")
     const userParam = searchParams.get("user")
 
     console.log("Google callback - token:", token ? "exists" : "missing")
+    console.log("Google callback - refreshToken:", refreshToken ? "exists" : "missing")
     console.log("Google callback - error:", error)
     console.log("Google callback - userParam:", userParam ? "exists" : "missing")
 
     if (token) {
-      // Lưu token do backend trả về sau khi đăng nhập Google
+      // Lưu token do backend trả về sau khi đăng nhập Google (giống hệt login bằng username)
       console.log("Saving authToken to localStorage:", token.substring(0, 20) + "...")
       localStorage.setItem("authToken", token)
+
+      // Lưu refreshToken nếu có (giống hệt login bằng username)
+      if (refreshToken) {
+        console.log("Saving refreshToken to localStorage:", refreshToken.substring(0, 20) + "...")
+        localStorage.setItem("refreshToken", refreshToken)
+      }
 
       let normalizedUser: any = null
 
@@ -44,8 +53,11 @@ export default function Home() {
             phoneNumber?: string
             role?: string
             avatar?: string
+            emailVerified?: boolean
+            isEmailVerified?: boolean // Backend có thể gửi field này
           }
 
+          // Format user giống hệt như login bằng username (theo User interface)
           normalizedUser = {
             id: parsed.id ?? "",
             email: parsed.email ?? "",
@@ -54,6 +66,7 @@ export default function Home() {
             username: parsed.username,
             phone: parsed.phoneNumber,
             avatar: parsed.avatar,
+            emailVerified: parsed.emailVerified ?? parsed.isEmailVerified ?? false,
             createdAt: new Date().toISOString(),
           }
 
@@ -70,29 +83,116 @@ export default function Home() {
       if (normalizedUser) {
         console.log("Updating AuthContext with user:", normalizedUser)
         setUserState(normalizedUser)
+        
+        // Verify tokens were saved
+        const savedToken = localStorage.getItem("authToken")
+        const savedRefreshToken = localStorage.getItem("refreshToken")
+        const savedUser = localStorage.getItem("user")
+        console.log("Token saved successfully:", savedToken ? savedToken.substring(0, 20) + "..." : "FAILED")
+        console.log("RefreshToken saved:", savedRefreshToken ? savedRefreshToken.substring(0, 20) + "..." : "missing")
+        console.log("User saved:", savedUser ? "yes" : "FAILED")
+
+        // Chuyển về trang chủ và xóa token/error khỏi URL
+        router.replace("/")
       } else {
-        console.warn("No normalizedUser - checking localStorage for existing user")
-        // Fallback: Nếu không có user param, thử load từ localStorage (nếu đã có từ trước)
-        const storedUser = localStorage.getItem("user")
-        if (storedUser) {
+        console.warn("No normalizedUser - trying to fetch user from API")
+        // Fallback: Nếu không có user param, gọi API để lấy user info
+        const fetchUserInfo = async () => {
           try {
-            const parsed = JSON.parse(storedUser)
-            console.log("Loading user from localStorage:", parsed)
-            setUserState(parsed)
-          } catch (e) {
-            console.error("Failed to load user from localStorage:", e)
+            console.log("Fetching user info from /auth/me...")
+            const userInfo = await authService.getCurrentUser()
+            
+            // Format user giống hệt như login bằng username
+            const formattedUser = {
+              id: userInfo.id ?? "",
+              email: userInfo.email ?? "",
+              fullName: userInfo.fullName ?? userInfo.username ?? (userInfo.email ? userInfo.email.split("@")[0] : ""),
+              role: (userInfo.role ?? "CUSTOMER").toUpperCase(),
+              username: userInfo.username,
+              phone: userInfo.phoneNumber,
+              avatar: userInfo.avatar,
+              emailVerified: userInfo.emailVerified ?? false,
+              createdAt: new Date().toISOString(),
+            }
+
+            console.log("Fetched user info:", formattedUser)
+            localStorage.setItem("user", JSON.stringify(formattedUser))
+            setUserState(formattedUser)
+
+            // Verify tokens were saved
+            const savedToken = localStorage.getItem("authToken")
+            const savedRefreshToken = localStorage.getItem("refreshToken")
+            const savedUser = localStorage.getItem("user")
+            console.log("Token saved successfully:", savedToken ? savedToken.substring(0, 20) + "..." : "FAILED")
+            console.log("RefreshToken saved:", savedRefreshToken ? savedRefreshToken.substring(0, 20) + "..." : "missing")
+            console.log("User saved:", savedUser ? "yes" : "FAILED")
+
+            // Chuyển về trang chủ và xóa token/error khỏi URL
+            router.replace("/")
+          } catch (error: any) {
+            console.error("Failed to fetch user info from API:", error)
+            
+            // Fallback: Decode JWT token để lấy thông tin user
+            try {
+              console.log("Attempting to decode JWT token...")
+              const tokenParts = token.split(".")
+              if (tokenParts.length === 3) {
+                const payload = JSON.parse(atob(tokenParts[1]))
+                console.log("Decoded JWT payload:", payload)
+                
+                // Tạo user object từ JWT payload
+                const decodedUser = {
+                  id: payload.sub || payload.userId || "",
+                  email: payload.email || payload.sub || "",
+                  fullName: payload.fullName || payload.name || payload.sub || "",
+                  role: (payload.scope || "CUSTOMER").toUpperCase(),
+                  username: payload.sub || "",
+                  phone: payload.phoneNumber || "",
+                  avatar: payload.avatar || "",
+                  emailVerified: payload.emailVerified || false,
+                  createdAt: new Date().toISOString(),
+                }
+
+                console.log("Created user from JWT:", decodedUser)
+                localStorage.setItem("user", JSON.stringify(decodedUser))
+                setUserState(decodedUser)
+
+                // Verify tokens were saved
+                const savedToken = localStorage.getItem("authToken")
+                const savedRefreshToken = localStorage.getItem("refreshToken")
+                const savedUser = localStorage.getItem("user")
+                console.log("Token saved successfully:", savedToken ? savedToken.substring(0, 20) + "..." : "FAILED")
+                console.log("RefreshToken saved:", savedRefreshToken ? savedRefreshToken.substring(0, 20) + "..." : "missing")
+                console.log("User saved:", savedUser ? "yes" : "FAILED")
+
+                router.replace("/")
+                return
+              }
+            } catch (decodeError) {
+              console.error("Failed to decode JWT token:", decodeError)
+            }
+
+            // Fallback cuối cùng: Thử load từ localStorage (nếu đã có từ trước)
+            const storedUser = localStorage.getItem("user")
+            if (storedUser) {
+              try {
+                const parsed = JSON.parse(storedUser)
+                console.log("Loading user from localStorage:", parsed)
+                setUserState(parsed)
+                router.replace("/")
+              } catch (e) {
+                console.error("Failed to load user from localStorage:", e)
+                router.replace("/")
+              }
+            } else {
+              console.error("No user found - Google login incomplete! Backend should send user param or /auth/me endpoint should work.")
+              router.replace("/")
+            }
           }
-        } else {
-          console.error("No user found in localStorage - Google login incomplete!")
         }
+
+        fetchUserInfo()
       }
-
-      // Verify token was saved
-      const savedToken = localStorage.getItem("authToken")
-      console.log("Token saved successfully:", savedToken ? savedToken.substring(0, 20) + "..." : "FAILED")
-
-      // Chuyển về trang chủ và xóa token/error khỏi URL
-      router.replace("/")
     } else if (error) {
       console.error("Google login error:", error)
       // TODO: hiển thị toast thông báo lỗi nếu cần
