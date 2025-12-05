@@ -64,12 +64,6 @@ class ApiClient {
         headers,
       });
 
-      console.log(
-        "Fetch response status:",
-        response.status,
-        response.statusText
-      );
-
       // Handle HTTP errors
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -83,11 +77,9 @@ class ApiClient {
       }
 
       const data = await response.json();
-      console.log("API Response:", data);
 
       // Unwrap Spring Boot response: {code, message, result}
       if (data && typeof data === "object" && "result" in data) {
-        console.log("Unwrapped result:", data.result);
         return data.result as T;
       }
 
@@ -114,7 +106,6 @@ class ApiClient {
       }
     }
 
-    console.log("API Request:", `${endpoint}${queryString}`);
     return this.request<T>(`${endpoint}${queryString}`, {
       method: "GET",
     });

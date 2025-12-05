@@ -9,12 +9,92 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User, ShoppingBag, Heart, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
+import { usersService } from "@/lib/services/users.service";
+import Image from "next/image";
+
+interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  fullName?: string;
+  phoneNumber?: string | null;
+  role: string;
+  emailVerified?: boolean;
+  avatarUrl?: string;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  lastLogin?: string | null;
+  membershipTier?: string;
+  points?: number;
+}
 
 export default function AccountPage() {
   const { user, logout, isLoading, setUserState } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("profile");
   const [localEmailVerified, setLocalEmailVerified] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [hasFetchedProfile, setHasFetchedProfile] = useState(false);
+
+  // Fetch user profile from API - fetch khi user có và chưa fetch
+  useEffect(() => {
+    // Tránh fetch nhiều lần
+    if (hasFetchedProfile) {
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token || !user) {
+      setLoadingProfile(false);
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      // Đánh dấu đã fetch để tránh fetch lại
+      setHasFetchedProfile(true);
+
+      try {
+        const profile = await usersService.getMyProfile();
+        setUserProfile(profile as UserProfile);
+        
+        // Update AuthContext with latest user info including avatarUrl
+        // Chỉ update nếu có thay đổi thực sự để tránh trigger lại
+        const updatedUser = {
+          ...user,
+          avatar: profile.avatarUrl || profile.avatar || user.avatar,
+          emailVerified: profile.emailVerified ?? user.emailVerified,
+          fullName: profile.fullName || user.fullName,
+          phone: profile.phoneNumber || user.phone,
+          username: profile.username || user.username,
+        };
+        
+        // Chỉ update nếu có thay đổi
+        const hasChanges = 
+          updatedUser.avatar !== user.avatar ||
+          updatedUser.emailVerified !== user.emailVerified ||
+          updatedUser.fullName !== user.fullName ||
+          updatedUser.phone !== user.phone ||
+          updatedUser.username !== user.username;
+        
+        if (hasChanges) {
+          setUserState(updatedUser);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
+        
+        setLocalEmailVerified(profile.emailVerified || false);
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+        // Reset flag nếu có lỗi để có thể retry
+        setHasFetchedProfile(false);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Chạy khi user.id thay đổi (khi user được load)
 
   // Refresh user from localStorage on mount AND when emailVerified event fires
   useEffect(() => {
@@ -55,7 +135,7 @@ export default function AccountPage() {
     };
   }, [user, setUserState]);
 
-  if (isLoading) {
+  if (isLoading || loadingProfile) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
@@ -101,18 +181,40 @@ export default function AccountPage() {
               <div className="bg-card border border-border rounded-lg p-6 sticky top-20">
                 {/* User Info */}
                 <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                    {(
-                      user.fullName?.charAt(0) ??
-                      user.email?.charAt(0) ??
-                      "?"
-                    ).toUpperCase()}
-                  </div>
+                  {(userProfile?.avatarUrl || user?.avatar) ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-3 border-2 border-primary">
+                      <Image
+                        src={userProfile?.avatarUrl || user?.avatar || ""}
+                        alt={userProfile?.fullName || user?.fullName || "Avatar"}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                      {(
+                        userProfile?.fullName?.charAt(0) ||
+                        user.fullName?.charAt(0) ||
+                        userProfile?.email?.charAt(0) ||
+                        user.email?.charAt(0) ||
+                        "?"
+                      ).toUpperCase()}
+                    </div>
+                  )}
                   <h2 className="font-bold text-foreground">
-                    {user.fullName ?? "Khách hàng BookSphere"}
+                    {userProfile?.fullName || user.fullName || "Khách hàng BookSphere"}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {user.email ?? "Không có email"}
+                    {userProfile?.email || user.email || "Không có email"}
+                  </p>
+                  {userProfile?.membershipTier && (
+                    <p className="text-xs text-primary mt-1 font-medium">
+                      {userProfile.membershipTier}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(userProfile?.points ?? 0).toLocaleString("vi-VN")} điểm
                   </p>
                 </div>
 
@@ -183,37 +285,103 @@ export default function AccountPage() {
                     Thông tin cá nhân
                   </h2>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">
-                        Họ và tên
-                      </label>
-                      <p className="text-foreground font-medium">
-                        {user.fullName}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">
-                        Email
-                      </label>
-                      <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Tên đăng nhập
+                        </label>
                         <p className="text-foreground font-medium">
-                          {user.email}
+                          {userProfile?.username || user.username || "N/A"}
                         </p>
-                        {user?.email && (
-                          <EmailVerification
-                            email={user.email}
-                            isVerified={localEmailVerified}
-                          />
-                        )}
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">
-                        Ngày tạo tài khoản
-                      </label>
-                      <p className="text-foreground font-medium">
-                        {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                      </p>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Họ và tên
+                        </label>
+                        <p className="text-foreground font-medium">
+                          {userProfile?.fullName || user.fullName || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Email
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <p className="text-foreground font-medium">
+                            {userProfile?.email || user.email}
+                          </p>
+                          {(userProfile?.email || user?.email) && (
+                            <EmailVerification
+                              email={userProfile?.email || user.email || ""}
+                              isVerified={localEmailVerified}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Số điện thoại
+                        </label>
+                        <p className="text-foreground font-medium">
+                          {userProfile?.phoneNumber || user.phone || "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      {userProfile?.dateOfBirth && (
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-1">
+                            Ngày sinh
+                          </label>
+                          <p className="text-foreground font-medium">
+                            {new Date(userProfile.dateOfBirth).toLocaleDateString("vi-VN")}
+                          </p>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Giới tính
+                        </label>
+                        <p className="text-foreground font-medium">
+                          {userProfile?.gender 
+                            ? (userProfile.gender === "MALE" ? "Nam" : userProfile.gender === "FEMALE" ? "Nữ" : "Khác")
+                            : "Chưa cập nhật"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Hạng thành viên
+                        </label>
+                        <p className="text-foreground font-medium">
+                          {userProfile?.membershipTier || "Chưa có"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                          Điểm tích lũy
+                        </label>
+                        <p className="text-foreground font-medium">
+                          {(userProfile?.points ?? 0).toLocaleString("vi-VN")} điểm
+                        </p>
+                      </div>
+                      {userProfile?.lastLogin && (
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-1">
+                            Lần đăng nhập cuối
+                          </label>
+                          <p className="text-foreground font-medium">
+                            {new Date(userProfile.lastLogin).toLocaleString("vi-VN")}
+                          </p>
+                        </div>
+                      )}
+                      {user?.createdAt && (
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-1">
+                            Ngày tạo tài khoản
+                          </label>
+                          <p className="text-foreground font-medium">
+                            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <Button className="mt-4">Chỉnh sửa thông tin</Button>
                   </div>

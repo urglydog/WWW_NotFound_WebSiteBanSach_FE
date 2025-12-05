@@ -16,7 +16,7 @@ export interface User {
   role: "ADMIN" | "CUSTOMER" | string;
   username?: string;
   phone?: string;
-  avatar?: string;
+  avatar?: string; // Can be avatarUrl from Google or custom avatar
   emailVerified?: boolean;
   createdAt: string;
 }

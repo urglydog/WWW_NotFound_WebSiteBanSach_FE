@@ -29,6 +29,7 @@ export interface AuthResponse {
     phoneNumber?: string;
     role: string;
     avatar?: string;
+    avatarUrl?: string; // Google avatar URL
     emailVerified?: boolean;
   };
 }

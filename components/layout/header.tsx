@@ -88,7 +88,21 @@ export function Header() {
                   href="/account"
                   className="flex items-center gap-2 rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <User className="h-5 w-5" />
+                  {user.avatar ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                      <Image
+                        src={user.avatar}
+                        alt={user.fullName || "Avatar"}
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {(user.fullName?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}
+                    </div>
+                  )}
                   <span className="hidden text-sm font-medium sm:inline">
                     {user.fullName}
                   </span>
