@@ -49,13 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Simulate checking if user is logged in on mount
+  // Load user from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("user")
-    if (stored) {
+    const token = localStorage.getItem("authToken")
+    
+    if (stored && token) {
       try {
         const parsedUser = JSON.parse(stored) as Partial<User>
-        if (parsedUser && typeof parsedUser === "object") {
+        if (parsedUser && typeof parsedUser === "object" && parsedUser.id) {
           setUser({
             id: parsedUser.id ?? "",
             email: parsedUser.email ?? "",
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         localStorage.removeItem("user")
+        localStorage.removeItem("authToken")
       }
     }
     setIsLoading(false)

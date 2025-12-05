@@ -17,16 +17,20 @@ export default function Home() {
   useEffect(() => {
     const token = searchParams.get("token")
     const error = searchParams.get("error")
-     const userParam = searchParams.get("user")
+    const userParam = searchParams.get("user")
 
     if (token) {
       // Lưu token do backend trả về sau khi đăng nhập Google
       localStorage.setItem("authToken", token)
 
+      let normalizedUser: any = null
+
       // Nếu backend truyền kèm thông tin user qua query param `user`, parse và lưu lại
       if (userParam) {
         try {
-          const parsed = JSON.parse(userParam) as {
+          // Decode URL-encoded JSON string
+          const decodedUserParam = decodeURIComponent(userParam)
+          const parsed = JSON.parse(decodedUserParam) as {
             id?: string
             email?: string
             fullName?: string
@@ -36,7 +40,7 @@ export default function Home() {
             avatar?: string
           }
 
-          const normalizedUser = {
+          normalizedUser = {
             id: parsed.id ?? "",
             email: parsed.email ?? "",
             fullName: parsed.fullName ?? parsed.username ?? (parsed.email ? parsed.email.split("@")[0] : ""),
@@ -48,10 +52,24 @@ export default function Home() {
           }
 
           localStorage.setItem("user", JSON.stringify(normalizedUser))
-          // Cập nhật luôn state trong AuthContext để header / account phản ứng ngay
-          setUserState(normalizedUser)
         } catch (e) {
           console.error("Failed to parse user info from Google callback:", e)
+        }
+      }
+
+      // Nếu có user, cập nhật AuthContext ngay lập tức
+      if (normalizedUser) {
+        setUserState(normalizedUser)
+      } else {
+        // Fallback: Nếu không có user param, thử load từ localStorage (nếu đã có từ trước)
+        const storedUser = localStorage.getItem("user")
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser)
+            setUserState(parsed)
+          } catch (e) {
+            console.error("Failed to load user from localStorage:", e)
+          }
         }
       }
 
@@ -61,7 +79,7 @@ export default function Home() {
       console.error("Google login error:", error)
       // TODO: hiển thị toast thông báo lỗi nếu cần
     }
-  }, [router, searchParams])
+  }, [router, searchParams, setUserState])
 
   return (
     <div className="flex flex-col min-h-screen">
