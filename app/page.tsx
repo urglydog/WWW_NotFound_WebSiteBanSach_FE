@@ -1,10 +1,68 @@
+ "use client"
+
+import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { RecommendationSection } from "@/components/recommendations/recommendation-section"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 export default function Home() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { setUserState } = useAuth()
+
+  useEffect(() => {
+    const token = searchParams.get("token")
+    const error = searchParams.get("error")
+     const userParam = searchParams.get("user")
+
+    if (token) {
+      // Lưu token do backend trả về sau khi đăng nhập Google
+      localStorage.setItem("authToken", token)
+
+      // Nếu backend truyền kèm thông tin user qua query param `user`, parse và lưu lại
+      if (userParam) {
+        try {
+          const parsed = JSON.parse(userParam) as {
+            id?: string
+            email?: string
+            fullName?: string
+            username?: string
+            phoneNumber?: string
+            role?: string
+            avatar?: string
+          }
+
+          const normalizedUser = {
+            id: parsed.id ?? "",
+            email: parsed.email ?? "",
+            fullName: parsed.fullName ?? parsed.username ?? (parsed.email ? parsed.email.split("@")[0] : ""),
+            role: (parsed.role ?? "CUSTOMER").toUpperCase(),
+            username: parsed.username,
+            phone: parsed.phoneNumber,
+            avatar: parsed.avatar,
+            createdAt: new Date().toISOString(),
+          }
+
+          localStorage.setItem("user", JSON.stringify(normalizedUser))
+          // Cập nhật luôn state trong AuthContext để header / account phản ứng ngay
+          setUserState(normalizedUser)
+        } catch (e) {
+          console.error("Failed to parse user info from Google callback:", e)
+        }
+      }
+
+      // Chuyển về trang chủ và xóa token/error khỏi URL
+      router.replace("/")
+    } else if (error) {
+      console.error("Google login error:", error)
+      // TODO: hiển thị toast thông báo lỗi nếu cần
+    }
+  }, [router, searchParams])
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
