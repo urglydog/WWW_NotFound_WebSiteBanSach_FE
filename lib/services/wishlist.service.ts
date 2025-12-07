@@ -5,11 +5,24 @@
 
 import { apiClient } from "../api-client"
 
+export interface WishlistBook {
+  id: string
+  title: string
+  price: number
+  discountPrice: number
+  mainImageUrl: string | null
+  averageRating: number
+  reviewCount: number
+  stockQuantity: number
+  authorNames: string[]
+  categoryId: string[]
+}
+
 export interface Wishlist {
   wishlistId: string
   userId: string
   createdAt: string
-  books: string[]
+  books: WishlistBook[]
 }
 
 export interface WishlistResponse {
@@ -34,8 +47,8 @@ export const wishlistService = {
    * Get user's wishlist
    */
   async getWishlist(): Promise<Wishlist> {
-    const response = await apiClient.get<WishlistResponse>("/wishlist")
-    return response.result
+    const response = await apiClient.get<Wishlist>("/wishlist")
+    return response
   },
 
   /**
@@ -44,9 +57,9 @@ export const wishlistService = {
   async addToWishlist(bookId: string): Promise<Wishlist> {
     console.log("[Wishlist Service] Adding book to wishlist:", bookId)
     try {
-      const response = await apiClient.post<WishlistResponse>("/wishlist/add", { bookId })
-      console.log("[Wishlist Service] Add successful:", response.result)
-      return response.result
+      const response = await apiClient.post<Wishlist>("/wishlist/add", { bookId })
+      console.log("[Wishlist Service] Add successful:", response)
+      return response
     } catch (error: any) {
       console.log("[Wishlist Service] Add error:", error)
       // If book already in wishlist (code 4001), fetch current wishlist
@@ -98,7 +111,7 @@ export const wishlistService = {
   async isInWishlist(bookId: string): Promise<boolean> {
     try {
       const wishlist = await this.getWishlist()
-      return wishlist.books.includes(bookId)
+      return wishlist.books.some(book => book.id === bookId)
     } catch (error) {
       return false
     }

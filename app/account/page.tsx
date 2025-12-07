@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User, ShoppingBag, Heart, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
+import { WishlistSection } from "@/components/account/wishlist-section";
 
 export default function AccountPage() {
   const { user, logout, isLoading, setUserState } = useAuth();
@@ -237,22 +238,7 @@ export default function AccountPage() {
                 </div>
               )}
 
-              {activeTab === "wishlist" && (
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <h2 className="text-2xl font-bold text-foreground mb-6">
-                    Danh sách yêu thích
-                  </h2>
-                  <div className="text-center py-12">
-                    <Heart
-                      size={48}
-                      className="mx-auto text-muted-foreground mb-4 opacity-50"
-                    />
-                    <p className="text-muted-foreground">
-                      Danh sách yêu thích trống
-                    </p>
-                  </div>
-                </div>
-              )}
+              {activeTab === "wishlist" && <WishlistSection />}
 
               {activeTab === "settings" && (
                 <div className="bg-card border border-border rounded-lg p-6">
