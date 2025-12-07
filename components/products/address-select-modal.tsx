@@ -14,6 +14,8 @@ interface AddressSelectModalProps {
   selectedAddressId?: string
   onSelectAddress: (address: Address) => void
   onAddressCreated?: () => void
+  editingAddress?: Address | null
+  onAddressUpdated?: () => void
 }
 
 export function AddressSelectModal({
@@ -23,6 +25,8 @@ export function AddressSelectModal({
   selectedAddressId,
   onSelectAddress,
   onAddressCreated,
+  editingAddress,
+  onAddressUpdated,
 }: AddressSelectModalProps) {
   const [selectedId, setSelectedId] = useState<string | undefined>(selectedAddressId)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -54,6 +58,41 @@ export function AddressSelectModal({
       loadProvinces()
     }
   }, [showAddForm])
+
+  // Load editing address data
+  useEffect(() => {
+    if (editingAddress && isOpen) {
+      setShowAddForm(true)
+      setRecipientName(editingAddress.recipientName)
+      setPhoneNumber(editingAddress.phoneNumber)
+      setStreet(editingAddress.street)
+      
+      // Load provinces first
+      loadProvinces().then(() => {
+        // Find and set province
+        const province = provinces.find(p => p.provinceId === editingAddress.provinceId)
+        if (province) {
+          setSelectedProvince(province)
+          
+          // Load districts for this province
+          loadDistricts(province.provinceId).then(() => {
+            const district = districts.find(d => d.districtId === editingAddress.districtId)
+            if (district) {
+              setSelectedDistrict(district)
+              
+              // Load wards for this district
+              loadWards(district.districtId).then(() => {
+                const ward = wards.find(w => w.wardCode === editingAddress.wardCode)
+                if (ward) {
+                  setSelectedWard(ward)
+                }
+              })
+            }
+          })
+        }
+      })
+    }
+  }, [editingAddress, isOpen])
 
   const loadProvinces = async () => {
     try {
@@ -126,7 +165,8 @@ export function AddressSelectModal({
 
     try {
       setSaving(true)
-      const newAddress = await addressService.createAddress({
+      
+      const addressData = {
         recipientName,
         phoneNumber,
         street,
@@ -138,7 +178,18 @@ export function AddressSelectModal({
         provinceId: selectedProvince.provinceId,
         districtId: selectedDistrict.districtId,
         wardCode: selectedWard.wardCode,
-      })
+      }
+
+      if (editingAddress) {
+        // Update existing address
+        await addressService.updateAddress(editingAddress.id, addressData)
+        onAddressUpdated?.()
+      } else {
+        // Create new address
+        const newAddress = await addressService.createAddress(addressData)
+        onSelectAddress(newAddress)
+        onAddressCreated?.()
+      }
 
       // Reset form
       setRecipientName("")
@@ -151,9 +202,6 @@ export function AddressSelectModal({
       setWards([])
       setShowAddForm(false)
 
-      // Select the new address and close
-      onSelectAddress(newAddress)
-      onAddressCreated?.()
       onClose()
     } catch (error) {
       console.error("Error saving address:", error)
@@ -190,7 +238,7 @@ export function AddressSelectModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-xl font-bold text-foreground">
-            {showAddForm ? "Thêm địa chỉ mới" : "Chọn địa chỉ giao hàng"}
+            {showAddForm ? (editingAddress ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới") : "Chọn địa chỉ giao hàng"}
           </h2>
           <button
             onClick={onClose}
