@@ -3,7 +3,9 @@
  * Handles all user-related API calls
  */
 
+
 import { apiClient, PaginatedResponse } from "../api-client";
+import { Address } from "./address.service";
 
 export interface User {
   id: string;
@@ -20,17 +22,6 @@ export interface User {
   totalSpent?: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Address {
-  id: string;
-  fullName: string;
-  phoneNumber: string;
-  address: string;
-  city: string;
-  district: string;
-  ward: string;
-  isDefault: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -99,44 +90,6 @@ export const usersService = {
     const formData = new FormData();
     formData.append("avatar", file);
     return apiClient.upload<{ url: string }>("/users/upload-avatar", formData);
-  },
-
-  /**
-   * Get user addresses
-   */
-  async getAddresses(): Promise<Address[]> {
-    return apiClient.get<Address[]>("/users/me/addresses");
-  },
-
-  /**
-   * Add a new address
-   */
-  async addAddress(data: Omit<Address, "id">): Promise<Address> {
-    return apiClient.post<Address>("/users/me/addresses", data);
-  },
-
-  /**
-   * Update an address
-   */
-  async updateAddress(
-    id: string,
-    data: Partial<Omit<Address, "id">>
-  ): Promise<Address> {
-    return apiClient.put<Address>(`/users/me/addresses/${id}`, data);
-  },
-
-  /**
-   * Delete an address
-   */
-  async deleteAddress(id: string): Promise<void> {
-    return apiClient.delete<void>(`/users/me/addresses/${id}`);
-  },
-
-  /**
-   * Set default address
-   */
-  async setDefaultAddress(id: string): Promise<Address> {
-    return apiClient.patch<Address>(`/users/me/addresses/${id}/default`, {});
   },
 
   /**

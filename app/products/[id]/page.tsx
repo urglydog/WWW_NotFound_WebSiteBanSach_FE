@@ -4,10 +4,13 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { mockBooks } from "@/lib/mock-data"
-import { Star, Heart, Share2 } from "lucide-react"
+import { Star, Heart, Share2, Truck, MapPin, Clock } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Book, booksService, Review, reviewsService, wishlistService } from "@/lib/services"
+import { Book, booksService, Review, reviewsService, wishlistService, addressService, shipmentService } from "@/lib/services"
+import type { Address } from "@/lib/services/address.service"
+import type { CalculateShippingResponse } from "@/lib/services/shipment.service"
+import { AddressSelectModal } from "@/components/products/address-select-modal"
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string | string[] }>()
@@ -23,6 +26,11 @@ export default function ProductDetailPage() {
   const [wishlistLoading, setWishlistLoading] = useState(false)
   const [isInWishlist, setIsInWishlist] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userAddress, setUserAddress] = useState<Address | null>(null)
+  const [allAddresses, setAllAddresses] = useState<Address[]>([])
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+  const [shippingInfo, setShippingInfo] = useState<CalculateShippingResponse | null>(null)
+  const [shippingLoading, setShippingLoading] = useState(false)
 
   useEffect(() => {
     // Check if user is logged in
@@ -54,6 +62,18 @@ export default function ProductDetailPage() {
           .catch(error => {
             console.error("Error checking wishlist:", error)
           })
+        
+        // Load user address
+        addressService.getUserAddresses()
+          .then(addresses => {
+            setAllAddresses(addresses)
+            if (addresses && addresses.length > 0) {
+              setUserAddress(addresses[0])
+            }
+          })
+          .catch(error => {
+            console.error("Error loading address:", error)
+          })
       }
     }
   }, [productId])
@@ -84,43 +104,101 @@ export default function ProductDetailPage() {
     return words.slice(0, maxLength).join(" ") + "..."
   }
 
-  const handleWishlistToggle = async () => {
-    console.log("[Product Page] handleWishlistToggle called for:", productId)
+  const getEstimatedDeliveryDate = () => {
+    const today = new Date()
+    const minDays = 2
+    const maxDays = 3
     
+    const minDate = new Date(today)
+    minDate.setDate(today.getDate() + minDays)
+    
+    const maxDate = new Date(today)
+    maxDate.setDate(today.getDate() + maxDays)
+    
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("vi-VN", { 
+        day: "2-digit", 
+        month: "2-digit",
+        weekday: "short"
+      })
+    }
+    
+    return `${formatDate(minDate)} - ${formatDate(maxDate)}`
+  }
+
+  const calculateShipping = async (address: Address) => {
+    try {
+      setShippingLoading(true)
+      const response = await shipmentService.calculateShippingFee(
+        address.districtId,
+        address.wardCode
+      )
+      setShippingInfo(response)
+    } catch (error) {
+      console.error("Error calculating shipping:", error)
+      setShippingInfo(null)
+    } finally {
+      setShippingLoading(false)
+    }
+  }
+
+  // Calculate shipping when address changes
+  useEffect(() => {
+    if (userAddress) {
+      calculateShipping(userAddress)
+    } else {
+      setShippingInfo(null)
+    }
+  }, [userAddress])
+
+  const formatDeliveryDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      weekday: "short"
+    })
+  }
+
+  const handleAddressSelect = (address: Address) => {
+    setUserAddress(address)
+  }
+
+  const handleAddressCreated = () => {
+    // Reload addresses after creating new one
+    addressService.getUserAddresses()
+      .then(addresses => {
+        setAllAddresses(addresses)
+      })
+      .catch(error => {
+        console.error("Error reloading addresses:", error)
+      })
+  }
+
+  const handleWishlistToggle = async () => {
     // Check if user is logged in
     if (!isLoggedIn) {
-      console.log("[Product Page] User not logged in, redirecting to login")
       router.push("/login")
       return
     }
 
     if (!productId) {
-      console.log("[Product Page] No product ID")
       return
     }
 
-    console.log("[Product Page] Current wishlist state:", { productId, isInWishlist })
-
     try {
       setWishlistLoading(true)
-      
       if (isInWishlist) {
-        console.log("[Product Page] Removing from wishlist")
         await wishlistService.removeFromWishlist(productId)
-        console.log("[Product Page] Removed successfully")
         setIsInWishlist(false)
       } else {
-        console.log("[Product Page] Adding to wishlist")
         await wishlistService.addToWishlist(productId)
-        console.log("[Product Page] Added successfully")
         setIsInWishlist(true)
       }
     } catch (error: any) {
-      console.error("[Product Page] Error toggling wishlist:", error)
       alert("Có lỗi xảy ra. Vui lòng thử lại.")
     } finally {
       setWishlistLoading(false)
-      console.log("[Product Page] Wishlist toggle completed")
     }
   }
 
@@ -294,6 +372,120 @@ export default function ProductDetailPage() {
                   <span className="text-foreground">Bìa mềm</span>
                 </div>
               </div>
+
+              {/* Shipping Information */}
+              <div className="mt-6 space-y-3 border border-border rounded-lg p-4 bg-muted/30">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Truck size={18} className="text-primary" />
+                  Thông tin giao hàng
+                </h3>
+                
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3">
+                    <MapPin size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-muted-foreground mb-1">Giao hàng đến:</p>
+                      {userAddress ? (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {userAddress.street}, {userAddress.ward}
+                          </p>
+                          <p className="text-foreground font-medium">
+                            {userAddress.district}, {userAddress.province}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {userAddress.recipientName} - {userAddress.phoneNumber}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-foreground font-medium">TP. Hồ Chí Minh</p>
+                      )}
+                      <button 
+                        onClick={() => setIsAddressModalOpen(true)}
+                        className="text-primary text-xs hover:underline mt-1"
+                      >
+                        Thay đổi địa chỉ
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Clock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-muted-foreground mb-1">Thời gian giao hàng dự kiến:</p>
+                      {shippingLoading ? (
+                        <p className="text-sm text-muted-foreground">Đang tính toán...</p>
+                      ) : shippingInfo ? (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {formatDeliveryDate(shippingInfo.estimatedDeliveryTime)}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            ({shippingInfo.deliveryDays} ngày làm việc)
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {getEstimatedDeliveryDate()}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            (2-3 ngày làm việc)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Truck size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-muted-foreground mb-1">Phí giao hàng:</p>
+                      {shippingLoading ? (
+                        <p className="text-sm text-muted-foreground">Đang tính toán...</p>
+                      ) : shippingInfo ? (
+                        <div className="space-y-1">
+                          {shippingInfo.totalFee === 0 ? (
+                            <p className="text-accent font-semibold">Miễn phí giao hàng</p>
+                          ) : (
+                            <>
+                              <p className="text-foreground font-semibold">
+                                {shippingInfo.totalFee.toLocaleString("vi-VN")}₫
+                              </p>
+                              {shippingInfo.serviceFee > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Phí dịch vụ: {shippingInfo.serviceFee.toLocaleString("vi-VN")}₫
+                                </p>
+                              )}
+                              {shippingInfo.insuranceFee > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Phí bảo hiểm: {shippingInfo.insuranceFee.toLocaleString("vi-VN")}₫
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-accent font-semibold">Miễn phí giao hàng</p>
+                          <p className="text-xs text-muted-foreground">
+                            Cho đơn hàng từ 150.000₫
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Đảm bảo hoàn tiền 100% nếu hàng không đúng mô tả</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -381,6 +573,16 @@ export default function ProductDetailPage() {
       </main>
 
       <Footer />
+
+      {/* Address Select Modal */}
+      <AddressSelectModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        addresses={allAddresses}
+        selectedAddressId={userAddress?.id}
+        onSelectAddress={handleAddressSelect}
+        onAddressCreated={handleAddressCreated}
+      />
     </div>
   )
 }

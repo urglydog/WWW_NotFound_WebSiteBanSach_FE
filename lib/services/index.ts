@@ -12,6 +12,9 @@ export * from "./categories.service"
 export * from "./promotions.service"
 export * from "./reviews.service"
 export * from "./wishlist.service"
+export * from "./address.service"
+export * from "./shipment.service"
+
 
 // Re-export apiClient for direct usage
 export { apiClient } from "../api-client"
