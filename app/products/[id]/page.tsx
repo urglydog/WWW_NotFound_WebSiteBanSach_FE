@@ -6,22 +6,29 @@ import { Button } from "@/components/ui/button"
 import { mockBooks } from "@/lib/mock-data"
 import { Star, Heart, Share2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { Book, booksService, Review, reviewsService } from "@/lib/services"
+import { useParams, useRouter } from "next/navigation"
+import { Book, booksService, Review, reviewsService, wishlistService } from "@/lib/services"
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string | string[] }>()
   const productIdValue = Array.isArray(params?.id) ? params?.id[0] : params?.id
   const productId = productIdValue?.toString().trim()
+  const router = useRouter()
 
   const [book, setBook] = useState<Book | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
-  const [isWishlisted, setIsWishlisted] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+  const [isInWishlist, setIsInWishlist] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null
+    setIsLoggedIn(!!token)
+
     if (productId) {
       booksService.getBookById(productId).then(setBook)
       
@@ -29,7 +36,7 @@ export default function ProductDetailPage() {
       setReviewsLoading(true)
       reviewsService.getBookReviews(productId, { page: 0, pageSize: 5 })
         .then(response => {
-          setReviews(response.data)
+          setReviews(response.content || [])
         })
         .catch(error => {
           console.error("Error loading reviews:", error)
@@ -37,6 +44,17 @@ export default function ProductDetailPage() {
         .finally(() => {
           setReviewsLoading(false)
         })
+
+      // Check wishlist status only if user is logged in
+      if (token) {
+        wishlistService.checkWishlist(productId)
+          .then(inWishlist => {
+            setIsInWishlist(inWishlist)
+          })
+          .catch(error => {
+            console.error("Error checking wishlist:", error)
+          })
+      }
     }
   }, [productId])
 
@@ -66,12 +84,55 @@ export default function ProductDetailPage() {
     return words.slice(0, maxLength).join(" ") + "..."
   }
 
+  const handleWishlistToggle = async () => {
+    console.log("[Product Page] handleWishlistToggle called for:", productId)
+    
+    // Check if user is logged in
+    if (!isLoggedIn) {
+      console.log("[Product Page] User not logged in, redirecting to login")
+      router.push("/login")
+      return
+    }
+
+    if (!productId) {
+      console.log("[Product Page] No product ID")
+      return
+    }
+
+    console.log("[Product Page] Current wishlist state:", { productId, isInWishlist })
+
+    try {
+      setWishlistLoading(true)
+      
+      if (isInWishlist) {
+        console.log("[Product Page] Removing from wishlist")
+        await wishlistService.removeFromWishlist(productId)
+        console.log("[Product Page] Removed successfully")
+        setIsInWishlist(false)
+      } else {
+        console.log("[Product Page] Adding to wishlist")
+        await wishlistService.addToWishlist(productId)
+        console.log("[Product Page] Added successfully")
+        setIsInWishlist(true)
+      }
+    } catch (error: any) {
+      console.error("[Product Page] Error toggling wishlist:", error)
+      alert("Có lỗi xảy ra. Vui lòng thử lại.")
+    } finally {
+      setWishlistLoading(false)
+      console.log("[Product Page] Wishlist toggle completed")
+    }
+  }
+
   if (!book) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Sách không tìm thấy</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent"></div>
+            <p className="text-muted-foreground text-lg">Đang tải thông tin sách...</p>
+          </div>
         </main>
         <Footer />
       </div>
@@ -144,7 +205,7 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
                 <span className="text-foreground font-medium">{book.averageRating}</span>
-                <span className="text-muted-foreground">({book.reviews} đánh giá)</span>
+                <span className="text-muted-foreground">({book.reviewCount || 0} đánh giá)</span>
               </div>
 
               {/* Description */}
@@ -165,8 +226,8 @@ export default function ProductDetailPage() {
 
               {/* Stock Status */}
               <div className="mb-6">
-                <p className={book.stockQuantity > 0 ? "text-accent" : "text-destructive"}>
-                  {book.stockQuantity > 0 ? "✓ Còn hàng" : "✗ Hết hàng"}
+                <p className={(book.stockQuantity ?? 0) > 0 ? "text-accent" : "text-destructive"}>
+                  {(book.stockQuantity ?? 0) > 0 ? "✓ Còn hàng" : "✗ Hết hàng"}
                 </p>
               </div>
 
@@ -192,20 +253,21 @@ export default function ProductDetailPage() {
                       +
                     </button>
                   </div>
-                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:flex-1" disabled={!(book.stockQuantity > 0)}>
-                    {book.stockQuantity > 0 ? "Thêm vào giỏ" : "Hết hàng"}
+                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:flex-1" disabled={!((book.stockQuantity ?? 0) > 0)}>
+                    {(book.stockQuantity ?? 0) > 0 ? "Thêm vào giỏ" : "Hết hàng"}
                   </Button>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <button
-                    onClick={() => setIsWishlisted(!isWishlisted)}
+                    onClick={handleWishlistToggle}
+                    disabled={wishlistLoading}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-border py-3 transition hover:bg-muted ${
-                      isWishlisted ? "bg-muted text-primary" : ""
+                      isInWishlist ? "bg-muted text-primary" : ""
                     }`}
                   >
-                    <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
-                    {isWishlisted ? "Đã lưu" : "Lưu sách"}
+                    <Heart size={18} fill={isInWishlist ? "currentColor" : "none"} />
+                    {wishlistLoading ? "Đang xử lý..." : (isInWishlist ? "Đã lưu" : "Lưu sách")}
                   </button>
                   <button 
                     onClick={handleShare}

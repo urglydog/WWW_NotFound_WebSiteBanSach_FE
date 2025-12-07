@@ -45,23 +45,19 @@ export const reviewsService = {
    */
   async getBookReviews(bookId: string, filters?: Omit<ReviewFilters, "bookId">): Promise<PaginatedResponse<Review>> {
     const response = await apiClient.get<{
-      code: number
-      message: string
-      result: {
-        content: Review[]
-        totalElements: number
-        totalPages: number
-        size: number
-        number: number
-      }
+      content: Review[]
+      totalElements: number
+      totalPages: number
+      size: number
+      number: number
     }>(`/review/book/${bookId}`, filters)
 
+    // apiClient already unwraps the result
     return {
-      data: response.result.content,
-      page: response.result.number,
-      pageSize: response.result.size,
-      totalItems: response.result.totalElements,
-      totalPages: response.result.totalPages,
+      content: response.content || [],
+      currentPage: response.number || 0,
+      totalPages: response.totalPages || 0,
+      totalElements: response.totalElements || 0,
     }
   },
 
