@@ -302,9 +302,15 @@ export function ChatbotFloatingButton() {
       >
         <DialogContent
           className={cn(
-            "flex h-[600px] max-w-md flex-col p-0",
-            "sm:h-[650px] sm:max-w-lg",
-            "md:h-[700px]"
+            "flex max-h-[calc(100vh-8rem)] h-[500px] max-w-md flex-col p-0",
+            "sm:h-[550px] sm:max-w-lg sm:max-h-[calc(100vh-10rem)]",
+            "md:h-[600px]",
+            // Position at bottom right corner instead of center
+            "!top-auto !left-auto !bottom-24 !right-6",
+            "!translate-x-0 !translate-y-0",
+            "sm:!bottom-28 sm:!right-8",
+            // Ensure it doesn't overflow above
+            "overflow-hidden"
           )}
           showCloseButton={true}
         >
