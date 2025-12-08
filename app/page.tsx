@@ -10,7 +10,8 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { authService } from "@/lib/services/auth.service"
 import { usersService } from "@/lib/services/users.service"
-import { booksService, Book } from "@/lib/services/books.service"
+import { booksService, Book, CategoryWithBooks } from "@/lib/services/books.service"
+import { categoriesService, Category } from "@/lib/services/categories.service"
 import { message } from "antd"
 
 export default function Home() {
@@ -20,16 +21,19 @@ export default function Home() {
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
   const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
   const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
+  const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const [bestSellers, suggested] = await Promise.all([
+        const [bestSellers, suggested, categoriesWithBooks] = await Promise.all([
           booksService.getBestSellers(4),
-          booksService.getSuggestedBooks(4)
+          booksService.getSuggestedBooks(4),
+          booksService.getBooksByPopularCategories(3)
         ])
         setBestSellingBooks(bestSellers)
         setSuggestedBooks(suggested)
+        setPopularCategoriesWithBooks(categoriesWithBooks)
       } catch (error) {
         console.error("Failed to fetch books:", error)
       }
@@ -122,7 +126,7 @@ export default function Home() {
               role: (userInfo.role ?? "CUSTOMER").toUpperCase(),
               username: userInfo.username,
               phone: userInfo.phoneNumber || undefined, // Convert null to undefined
-              avatar: (userInfo as any).avatarUrl || userInfo.avatar, // Lấy avatarUrl nếu có (từ Google)
+              avatar: userInfo.avatarUrl || userInfo.avatar, // Lấy avatarUrl nếu có (từ Google)
               emailVerified: userInfo.emailVerified ?? false,
               createdAt: new Date().toISOString(),
             }
@@ -303,21 +307,55 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-              {["Văn học", "Kinh tế", "Tâm lý học"].map((category, i) => (
-                <Link key={i} href={`/categories/${category.toLowerCase()}`}>
-                  <div className="group cursor-pointer">
-                    <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
-                      <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
-                        <span className="text-4xl sm:text-5xl">📖</span>
+              {popularCategoriesWithBooks.length > 0 ? (
+                popularCategoriesWithBooks.slice(0, 3).map((item) => (
+                  <Link key={item.category.id} href={`/categories/${item.category.id}`}>
+                    <div className="group cursor-pointer">
+                      <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
+                        <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
+                          {(() => {
+                            const bookImage = item.books && item.books.length > 0
+                              ? (item.books[0].mainImageUrl || (item.books[0].imageUrls && item.books[0].imageUrls[0]))
+                              : null;
+
+                            if (bookImage) {
+                              return <img src={bookImage} alt={item.category.name} className="h-full w-full object-cover" />;
+                            }
+
+                            if (item.category.image) {
+                              return <img src={item.category.image} alt={item.category.name} className="h-full w-full object-cover" />;
+                            }
+
+                            return <span className="text-4xl sm:text-5xl">📖</span>;
+                          })()}
+                        </div>
                       </div>
+                      <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
+                        {item.category.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground sm:text-base">
+                        {item.category.description || `Khám phá ${item.category.name}`}
+                      </p>
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
-                      {category}
-                    </h3>
-                    <p className="text-sm text-muted-foreground sm:text-base">Khám phá {category.toLowerCase()}</p>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                ["Văn học", "Kinh tế", "Tâm lý học"].map((category, i) => (
+                  <Link key={i} href={`/categories/${category.toLowerCase()}`}>
+                    <div className="group cursor-pointer">
+                      <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
+                        <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
+                          <span className="text-4xl sm:text-5xl">📖</span>
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
+                        {category}
+                      </h3>
+                      <p className="text-sm text-muted-foreground sm:text-base">Khám phá {category.toLowerCase()}</p>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </section>
