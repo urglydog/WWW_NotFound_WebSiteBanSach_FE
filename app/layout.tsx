@@ -4,8 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
-import { OrderProvider } from "@/lib/order-context";
 import { CartSidebar } from "@/components/cart/cart-sidebar";
+import { ChatbotFloatingButton } from "@/components/chatbot/chatbot-floating-button";
 import "./globals.css";
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -42,12 +42,11 @@ export default function RootLayout({
     <html lang="vi">
       <body className={`font-sans antialiased`}>
         <AuthProvider>
-          <OrderProvider>
-            <CartProvider>
-              {children}
-              <CartSidebar />
-            </CartProvider>
-          </OrderProvider>
+          <CartProvider>
+            {children}
+            <CartSidebar />
+            <ChatbotFloatingButton />
+          </CartProvider>
         </AuthProvider>
         <Analytics />
       </body>

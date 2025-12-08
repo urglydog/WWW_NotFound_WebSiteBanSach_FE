@@ -12,9 +12,8 @@ import Image from "next/image";
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const { state, dispatch } = useCart();
+  const { itemCount, toggleCart } = useCart();
   const { user } = useAuth();
-  const cartCount = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <>
@@ -70,14 +69,14 @@ export function Header() {
                 <Search className="h-5 w-5" />
               </button>
               <button
-                onClick={() => dispatch({ type: "TOGGLE_CART" })}
+                onClick={toggleCart}
                 className="relative rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="Mở giỏ hàng"
               >
                 <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
+                {itemCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-                    {cartCount}
+                    {itemCount}
                   </span>
                 )}
               </button>
@@ -88,7 +87,21 @@ export function Header() {
                   href="/account"
                   className="flex items-center gap-2 rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <User className="h-5 w-5" />
+                  {user.avatar ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                      <Image
+                        src={user.avatar}
+                        alt={user.fullName || "Avatar"}
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {(user.fullName?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}
+                    </div>
+                  )}
                   <span className="hidden text-sm font-medium sm:inline">
                     {user.fullName}
                   </span>

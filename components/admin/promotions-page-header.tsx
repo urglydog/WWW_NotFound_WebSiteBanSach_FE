@@ -1,4 +1,4 @@
-import { Plus, Download, Settings } from "lucide-react"
+import { Plus, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -7,7 +7,6 @@ interface PromotionsPageHeaderProps {
   description?: string
   onAddPromotion?: () => void
   onExportData?: () => void
-  onSettings?: () => void
   className?: string
 }
 
@@ -16,7 +15,6 @@ export function PromotionsPageHeader({
   description = "Tạo và quản lý các chương trình khuyến mãi, mã giảm giá cho cửa hàng.",
   onAddPromotion,
   onExportData,
-  onSettings,
   className 
 }: PromotionsPageHeaderProps) {
   return (
@@ -27,16 +25,6 @@ export function PromotionsPageHeader({
       </div>
       
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:self-end">
-        <Button 
-          variant="outline" 
-          className="gap-2 sm:w-auto text-xs sm:text-sm"
-          onClick={onSettings}
-        >
-          <Settings className="w-4 h-4" />
-          <span className="hidden sm:inline">Cài đặt</span>
-          <span className="inline sm:hidden">Cài đặt</span>
-        </Button>
-        
         <Button 
           variant="outline" 
           className="gap-2 sm:w-auto text-xs sm:text-sm"

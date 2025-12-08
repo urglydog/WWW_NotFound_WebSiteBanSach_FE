@@ -4,24 +4,39 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { mockBooks } from "@/lib/mock-data"
-import { Star, Heart, Share2 } from "lucide-react"
+import { Star, Heart, Share2, Truck, MapPin, Clock } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { Book, booksService, Review, reviewsService } from "@/lib/services"
+import { useParams, useRouter } from "next/navigation"
+import { Book, booksService, Review, reviewsService, wishlistService, addressService, shipmentService } from "@/lib/services"
+import type { Address } from "@/lib/services/address.service"
+import type { CalculateShippingResponse } from "@/lib/services/shipment.service"
+import { AddressSelectModal } from "@/components/products/address-select-modal"
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string | string[] }>()
   const productIdValue = Array.isArray(params?.id) ? params?.id[0] : params?.id
   const productId = productIdValue?.toString().trim()
+  const router = useRouter()
 
   const [book, setBook] = useState<Book | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
-  const [isWishlisted, setIsWishlisted] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+  const [isInWishlist, setIsInWishlist] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userAddress, setUserAddress] = useState<Address | null>(null)
+  const [allAddresses, setAllAddresses] = useState<Address[]>([])
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+  const [shippingInfo, setShippingInfo] = useState<CalculateShippingResponse | null>(null)
+  const [shippingLoading, setShippingLoading] = useState(false)
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null
+    setIsLoggedIn(!!token)
+
     if (productId) {
       booksService.getBookById(productId).then(setBook)
       
@@ -29,7 +44,7 @@ export default function ProductDetailPage() {
       setReviewsLoading(true)
       reviewsService.getBookReviews(productId, { page: 0, pageSize: 5 })
         .then(response => {
-          setReviews(response.data)
+          setReviews(response.content || [])
         })
         .catch(error => {
           console.error("Error loading reviews:", error)
@@ -37,6 +52,29 @@ export default function ProductDetailPage() {
         .finally(() => {
           setReviewsLoading(false)
         })
+
+      // Check wishlist status only if user is logged in
+      if (token) {
+        wishlistService.checkWishlist(productId)
+          .then(inWishlist => {
+            setIsInWishlist(inWishlist)
+          })
+          .catch(error => {
+            console.error("Error checking wishlist:", error)
+          })
+        
+        // Load user address
+        addressService.getUserAddresses()
+          .then(addresses => {
+            setAllAddresses(addresses)
+            if (addresses && addresses.length > 0) {
+              setUserAddress(addresses[0])
+            }
+          })
+          .catch(error => {
+            console.error("Error loading address:", error)
+          })
+      }
     }
   }, [productId])
 
@@ -66,12 +104,113 @@ export default function ProductDetailPage() {
     return words.slice(0, maxLength).join(" ") + "..."
   }
 
+  const getEstimatedDeliveryDate = () => {
+    const today = new Date()
+    const minDays = 2
+    const maxDays = 3
+    
+    const minDate = new Date(today)
+    minDate.setDate(today.getDate() + minDays)
+    
+    const maxDate = new Date(today)
+    maxDate.setDate(today.getDate() + maxDays)
+    
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("vi-VN", { 
+        day: "2-digit", 
+        month: "2-digit",
+        weekday: "short"
+      })
+    }
+    
+    return `${formatDate(minDate)} - ${formatDate(maxDate)}`
+  }
+
+  const calculateShipping = async (address: Address) => {
+    try {
+      setShippingLoading(true)
+      const response = await shipmentService.calculateShippingFee(
+        address.districtId,
+        address.wardCode
+      )
+      setShippingInfo(response)
+    } catch (error) {
+      console.error("Error calculating shipping:", error)
+      setShippingInfo(null)
+    } finally {
+      setShippingLoading(false)
+    }
+  }
+
+  // Calculate shipping when address changes
+  useEffect(() => {
+    if (userAddress) {
+      calculateShipping(userAddress)
+    } else {
+      setShippingInfo(null)
+    }
+  }, [userAddress])
+
+  const formatDeliveryDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      weekday: "short"
+    })
+  }
+
+  const handleAddressSelect = (address: Address) => {
+    setUserAddress(address)
+  }
+
+  const handleAddressCreated = () => {
+    // Reload addresses after creating new one
+    addressService.getUserAddresses()
+      .then(addresses => {
+        setAllAddresses(addresses)
+      })
+      .catch(error => {
+        console.error("Error reloading addresses:", error)
+      })
+  }
+
+  const handleWishlistToggle = async () => {
+    // Check if user is logged in
+    if (!isLoggedIn) {
+      router.push("/login")
+      return
+    }
+
+    if (!productId) {
+      return
+    }
+
+    try {
+      setWishlistLoading(true)
+      if (isInWishlist) {
+        await wishlistService.removeFromWishlist(productId)
+        setIsInWishlist(false)
+      } else {
+        await wishlistService.addToWishlist(productId)
+        setIsInWishlist(true)
+      }
+    } catch (error: any) {
+      alert("Có lỗi xảy ra. Vui lòng thử lại.")
+    } finally {
+      setWishlistLoading(false)
+    }
+  }
+
   if (!book) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Sách không tìm thấy</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent"></div>
+            <p className="text-muted-foreground text-lg">Đang tải thông tin sách...</p>
+          </div>
         </main>
         <Footer />
       </div>
@@ -144,7 +283,7 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
                 <span className="text-foreground font-medium">{book.averageRating}</span>
-                <span className="text-muted-foreground">({book.reviews} đánh giá)</span>
+                <span className="text-muted-foreground">({book.reviewCount || 0} đánh giá)</span>
               </div>
 
               {/* Description */}
@@ -165,8 +304,8 @@ export default function ProductDetailPage() {
 
               {/* Stock Status */}
               <div className="mb-6">
-                <p className={book.stockQuantity > 0 ? "text-accent" : "text-destructive"}>
-                  {book.stockQuantity > 0 ? "✓ Còn hàng" : "✗ Hết hàng"}
+                <p className={(book.stockQuantity ?? 0) > 0 ? "text-accent" : "text-destructive"}>
+                  {(book.stockQuantity ?? 0) > 0 ? "✓ Còn hàng" : "✗ Hết hàng"}
                 </p>
               </div>
 
@@ -192,20 +331,21 @@ export default function ProductDetailPage() {
                       +
                     </button>
                   </div>
-                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:flex-1" disabled={!(book.stockQuantity > 0)}>
-                    {book.stockQuantity > 0 ? "Thêm vào giỏ" : "Hết hàng"}
+                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:flex-1" disabled={!((book.stockQuantity ?? 0) > 0)}>
+                    {(book.stockQuantity ?? 0) > 0 ? "Thêm vào giỏ" : "Hết hàng"}
                   </Button>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <button
-                    onClick={() => setIsWishlisted(!isWishlisted)}
+                    onClick={handleWishlistToggle}
+                    disabled={wishlistLoading}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-border py-3 transition hover:bg-muted ${
-                      isWishlisted ? "bg-muted text-primary" : ""
+                      isInWishlist ? "bg-muted text-primary" : ""
                     }`}
                   >
-                    <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
-                    {isWishlisted ? "Đã lưu" : "Lưu sách"}
+                    <Heart size={18} fill={isInWishlist ? "currentColor" : "none"} />
+                    {wishlistLoading ? "Đang xử lý..." : (isInWishlist ? "Đã lưu" : "Lưu sách")}
                   </button>
                   <button 
                     onClick={handleShare}
@@ -230,6 +370,120 @@ export default function ProductDetailPage() {
                 <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
                   <span className="text-muted-foreground">Loại bìa:</span>
                   <span className="text-foreground">Bìa mềm</span>
+                </div>
+              </div>
+
+              {/* Shipping Information */}
+              <div className="mt-6 space-y-3 border border-border rounded-lg p-4 bg-muted/30">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Truck size={18} className="text-primary" />
+                  Thông tin giao hàng
+                </h3>
+                
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3">
+                    <MapPin size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-muted-foreground mb-1">Giao hàng đến:</p>
+                      {userAddress ? (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {userAddress.street}, {userAddress.ward}
+                          </p>
+                          <p className="text-foreground font-medium">
+                            {userAddress.district}, {userAddress.province}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {userAddress.recipientName} - {userAddress.phoneNumber}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-foreground font-medium">TP. Hồ Chí Minh</p>
+                      )}
+                      <button 
+                        onClick={() => setIsAddressModalOpen(true)}
+                        className="text-primary text-xs hover:underline mt-1"
+                      >
+                        Thay đổi địa chỉ
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Clock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-muted-foreground mb-1">Thời gian giao hàng dự kiến:</p>
+                      {shippingLoading ? (
+                        <p className="text-sm text-muted-foreground">Đang tính toán...</p>
+                      ) : shippingInfo ? (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {formatDeliveryDate(shippingInfo.estimatedDeliveryTime)}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            ({shippingInfo.deliveryDays} ngày làm việc)
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {getEstimatedDeliveryDate()}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            (2-3 ngày làm việc)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Truck size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-muted-foreground mb-1">Phí giao hàng:</p>
+                      {shippingLoading ? (
+                        <p className="text-sm text-muted-foreground">Đang tính toán...</p>
+                      ) : shippingInfo ? (
+                        <div className="space-y-1">
+                          {shippingInfo.totalFee === 0 ? (
+                            <p className="text-accent font-semibold">Miễn phí giao hàng</p>
+                          ) : (
+                            <>
+                              <p className="text-foreground font-semibold">
+                                {shippingInfo.totalFee.toLocaleString("vi-VN")}₫
+                              </p>
+                              {shippingInfo.serviceFee > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Phí dịch vụ: {shippingInfo.serviceFee.toLocaleString("vi-VN")}₫
+                                </p>
+                              )}
+                              {shippingInfo.insuranceFee > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Phí bảo hiểm: {shippingInfo.insuranceFee.toLocaleString("vi-VN")}₫
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-accent font-semibold">Miễn phí giao hàng</p>
+                          <p className="text-xs text-muted-foreground">
+                            Cho đơn hàng từ 150.000₫
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Đảm bảo hoàn tiền 100% nếu hàng không đúng mô tả</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -319,6 +573,16 @@ export default function ProductDetailPage() {
       </main>
 
       <Footer />
+
+      {/* Address Select Modal */}
+      <AddressSelectModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        addresses={allAddresses}
+        selectedAddressId={userAddress?.id}
+        onSelectAddress={handleAddressSelect}
+        onAddressCreated={handleAddressCreated}
+      />
     </div>
   )
 }
