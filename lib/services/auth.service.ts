@@ -29,6 +29,7 @@ export interface AuthResponse {
     phoneNumber?: string;
     role: string;
     avatar?: string;
+    avatarUrl?: string; // Google avatar URL
     emailVerified?: boolean;
   };
 }
@@ -97,6 +98,32 @@ export const authService = {
   async forgotPassword(email: string): Promise<{ message: string }> {
     return apiClient.post<{ message: string }>("/auth/forgot-password", {
       email,
+    });
+  },
+
+  /**
+   * Send OTP to email for password reset
+   */
+  async sendOtp(email: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>("/auth/send-otp", {
+      email,
+    });
+  },
+
+  /**
+   * Verify OTP and reset password
+   */
+  async verifyOtp(
+    email: string,
+    otp: string,
+    passwordNew: string,
+    confirmPassword: string
+  ): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>("/auth/verify-otp", {
+      email,
+      otp,
+      passwordNew,
+      confirmPassword,
     });
   },
 

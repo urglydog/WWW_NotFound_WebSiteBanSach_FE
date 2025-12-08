@@ -1,6 +1,6 @@
  "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -8,25 +8,44 @@ import { RecommendationSection } from "@/components/recommendations/recommendati
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { authService } from "@/lib/services/auth.service"
+import { usersService } from "@/lib/services/users.service"
+import { message } from "antd"
 
 export default function Home() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { setUserState } = useAuth()
+  const { setUserState, user } = useAuth()
+  const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
 
   useEffect(() => {
+    // Tránh xử lý callback nhiều lần
+    if (hasProcessedCallback) {
+      return
+    }
+
     const token = searchParams.get("token")
+    const refreshToken = searchParams.get("refreshToken")
     const error = searchParams.get("error")
-     const userParam = searchParams.get("user")
+    const userParam = searchParams.get("user")
 
     if (token) {
-      // Lưu token do backend trả về sau khi đăng nhập Google
+      // Lưu token do backend trả về sau khi đăng nhập Google (giống hệt login bằng username)
       localStorage.setItem("authToken", token)
+
+      // Lưu refreshToken nếu có (giống hệt login bằng username)
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken)
+      }
+
+      let normalizedUser: any = null
 
       // Nếu backend truyền kèm thông tin user qua query param `user`, parse và lưu lại
       if (userParam) {
         try {
-          const parsed = JSON.parse(userParam) as {
+          // Decode URL-encoded JSON string
+          const decodedUserParam = decodeURIComponent(userParam)
+          const parsed = JSON.parse(decodedUserParam) as {
             id?: string
             email?: string
             fullName?: string
@@ -34,34 +53,161 @@ export default function Home() {
             phoneNumber?: string
             role?: string
             avatar?: string
+            avatarUrl?: string // Google avatar URL
+            emailVerified?: boolean
+            isEmailVerified?: boolean // Backend có thể gửi field này
           }
 
-          const normalizedUser = {
+          // Format user giống hệt như login bằng username (theo User interface)
+          normalizedUser = {
             id: parsed.id ?? "",
             email: parsed.email ?? "",
             fullName: parsed.fullName ?? parsed.username ?? (parsed.email ? parsed.email.split("@")[0] : ""),
             role: (parsed.role ?? "CUSTOMER").toUpperCase(),
             username: parsed.username,
             phone: parsed.phoneNumber,
-            avatar: parsed.avatar,
+            avatar: parsed.avatarUrl ?? parsed.avatar,
+            emailVerified: parsed.emailVerified ?? parsed.isEmailVerified ?? false,
             createdAt: new Date().toISOString(),
           }
 
           localStorage.setItem("user", JSON.stringify(normalizedUser))
-          // Cập nhật luôn state trong AuthContext để header / account phản ứng ngay
-          setUserState(normalizedUser)
         } catch (e) {
-          console.error("Failed to parse user info from Google callback:", e)
+          // Failed to parse user info - will fetch from API instead
         }
       }
 
-      // Chuyển về trang chủ và xóa token/error khỏi URL
-      router.replace("/")
+      // Nếu có user, cập nhật AuthContext ngay lập tức
+      if (normalizedUser) {
+        setUserState(normalizedUser)
+
+        // Đánh dấu đã xử lý callback
+        setHasProcessedCallback(true)
+
+        // Chuyển về trang chủ và xóa token/error khỏi URL
+        router.replace("/")
+      } else {
+        // Fallback: Nếu không có user param, gọi API để lấy user info
+        const fetchUserInfo = async () => {
+          try {
+            // Sử dụng usersService.getMyProfile() thay vì authService.getCurrentUser()
+            // vì API /users/me trả về đầy đủ thông tin bao gồm avatarUrl
+            const userInfo = await usersService.getMyProfile()
+            
+            // Format user giống hệt như login bằng username
+            // API trả về avatarUrl (từ Google) hoặc avatar (custom)
+            const formattedUser = {
+              id: userInfo.id ?? "",
+              email: userInfo.email ?? "",
+              fullName: userInfo.fullName ?? userInfo.username ?? (userInfo.email ? userInfo.email.split("@")[0] : ""),
+              role: (userInfo.role ?? "CUSTOMER").toUpperCase(),
+              username: userInfo.username,
+              phone: userInfo.phoneNumber || undefined, // Convert null to undefined
+              avatar: (userInfo as any).avatarUrl || userInfo.avatar, // Lấy avatarUrl nếu có (từ Google)
+              emailVerified: userInfo.emailVerified ?? false,
+              createdAt: new Date().toISOString(),
+            }
+
+            localStorage.setItem("user", JSON.stringify(formattedUser))
+            setUserState(formattedUser)
+
+            // Đánh dấu đã xử lý callback
+            setHasProcessedCallback(true)
+
+            // Chuyển về trang chủ và xóa token/error khỏi URL
+            router.replace("/")
+          } catch (error: any) {
+            // Fallback: Decode JWT token để lấy thông tin user
+            try {
+              const tokenParts = token.split(".")
+              if (tokenParts.length === 3) {
+                const payload = JSON.parse(atob(tokenParts[1]))
+                
+                // Tạo user object từ JWT payload
+                const decodedUser = {
+                  id: payload.sub || payload.userId || "",
+                  email: payload.email || payload.sub || "",
+                  fullName: payload.fullName || payload.name || payload.sub || "",
+                  role: (payload.scope || "CUSTOMER").toUpperCase(),
+                  username: payload.sub || "",
+                  phone: payload.phoneNumber || "",
+                  avatar: payload.avatar || "",
+                  emailVerified: payload.emailVerified || false,
+                  createdAt: new Date().toISOString(),
+                }
+
+                localStorage.setItem("user", JSON.stringify(decodedUser))
+                setUserState(decodedUser)
+                setHasProcessedCallback(true)
+                router.replace("/")
+                return
+              }
+            } catch (decodeError) {
+              // Ignore decode errors
+            }
+
+            // Fallback cuối cùng: Thử load từ localStorage (nếu đã có từ trước)
+            const storedUser = localStorage.getItem("user")
+            if (storedUser) {
+              try {
+                const parsed = JSON.parse(storedUser)
+                setUserState(parsed)
+                setHasProcessedCallback(true)
+                router.replace("/")
+              } catch (e) {
+                setHasProcessedCallback(true)
+                router.replace("/")
+              }
+            } else {
+              setHasProcessedCallback(true)
+              router.replace("/")
+            }
+          }
+        }
+
+        fetchUserInfo()
+      }
     } else if (error) {
-      console.error("Google login error:", error)
-      // TODO: hiển thị toast thông báo lỗi nếu cần
+      // Kiểm tra xem có token trong localStorage từ lần login trước không
+      // Nếu có và user đã đăng nhập, có thể backend đã login thành công nhưng redirect sai
+      const existingToken = localStorage.getItem("authToken")
+      const existingUser = localStorage.getItem("user")
+      
+      if (existingToken && existingUser && user) {
+        // Không hiển thị lỗi nếu đã có token và user
+        setHasProcessedCallback(true)
+        router.replace("/")
+        return
+      }
+      
+      // Hiển thị thông báo lỗi cho người dùng
+      let errorMessage = "Đăng nhập Google thất bại. Vui lòng thử lại."
+      
+      if (error === "google_login_failed") {
+        errorMessage = "Không thể đăng nhập bằng Google. Backend đã xử lý nhưng không trả về token. Vui lòng kiểm tra backend hoặc đăng nhập bằng tên đăng nhập/mật khẩu."
+      } else if (error === "google_invalid_code") {
+        errorMessage = "Mã xác thực không hợp lệ. Vui lòng thử lại."
+      }
+      
+      // Đánh dấu đã xử lý callback trước khi hiển thị message
+      setHasProcessedCallback(true)
+      
+      // Hiển thị message với duration dài hơn để user có thể đọc
+      // Sử dụng setTimeout để đảm bảo state đã được cập nhật
+      setTimeout(() => {
+        message.error({
+          content: errorMessage,
+          duration: 6,
+        })
+      }, 0)
+      
+      // Delay một chút trước khi redirect để đảm bảo message được hiển thị
+      setTimeout(() => {
+        // Chuyển về trang chủ và xóa error khỏi URL
+        router.replace("/")
+      }, 200)
     }
-  }, [router, searchParams])
+  }, [router, searchParams, setUserState, hasProcessedCallback])
 
   return (
     <div className="flex flex-col min-h-screen">

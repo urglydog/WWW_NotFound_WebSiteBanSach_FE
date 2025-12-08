@@ -12,16 +12,23 @@ export interface User {
   username: string;
   email: string;
   fullName?: string;
-  phoneNumber?: string;
+  phoneNumber?: string | null;
   avatar?: string;
-  role: "user" | "admin";
-  status: "active" | "inactive" | "banned";
+  avatarUrl?: string; // Google avatar URL
+  role: "user" | "admin" | "CUSTOMER" | "ADMIN";
+  status?: "active" | "inactive" | "banned";
   emailVerified?: boolean;
   addresses?: Address[];
   totalOrders?: number;
   totalSpent?: number;
-  createdAt: string;
-  updatedAt: string;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  lastLogin?: string | null;
+  membershipTier?: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+  points?: number;
+  providerId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UpdateProfileRequest {
