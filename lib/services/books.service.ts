@@ -113,7 +113,7 @@ export const booksService = {
    * Get best-selling books
    */
   async getBestSellers(limit: number = 10): Promise<Book[]> {
-    return apiClient.get<Book[]>("/books/best-sellers", { limit });
+    return apiClient.get<Book[]>("/books/best-selling", { limit });
   },
 
   /**

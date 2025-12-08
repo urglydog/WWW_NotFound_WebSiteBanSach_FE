@@ -1,4 +1,4 @@
- "use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -10,6 +10,7 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { authService } from "@/lib/services/auth.service"
 import { usersService } from "@/lib/services/users.service"
+import { booksService, Book } from "@/lib/services/books.service"
 import { message } from "antd"
 
 export default function Home() {
@@ -17,6 +18,19 @@ export default function Home() {
   const searchParams = useSearchParams()
   const { setUserState, user } = useAuth()
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
+  const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
+
+  useEffect(() => {
+    const fetchBestSellers = async () => {
+      try {
+        const data = await booksService.getBestSellers(4)
+        setBestSellingBooks(data)
+      } catch (error) {
+        console.error("Failed to fetch best sellers:", error)
+      }
+    }
+    fetchBestSellers()
+  }, [])
 
   useEffect(() => {
     // Tránh xử lý callback nhiều lần
@@ -93,7 +107,7 @@ export default function Home() {
             // Sử dụng usersService.getMyProfile() thay vì authService.getCurrentUser()
             // vì API /users/me trả về đầy đủ thông tin bao gồm avatarUrl
             const userInfo = await usersService.getMyProfile()
-            
+
             // Format user giống hệt như login bằng username
             // API trả về avatarUrl (từ Google) hoặc avatar (custom)
             const formattedUser = {
@@ -122,7 +136,7 @@ export default function Home() {
               const tokenParts = token.split(".")
               if (tokenParts.length === 3) {
                 const payload = JSON.parse(atob(tokenParts[1]))
-                
+
                 // Tạo user object từ JWT payload
                 const decodedUser = {
                   id: payload.sub || payload.userId || "",
@@ -172,26 +186,26 @@ export default function Home() {
       // Nếu có và user đã đăng nhập, có thể backend đã login thành công nhưng redirect sai
       const existingToken = localStorage.getItem("authToken")
       const existingUser = localStorage.getItem("user")
-      
+
       if (existingToken && existingUser && user) {
         // Không hiển thị lỗi nếu đã có token và user
         setHasProcessedCallback(true)
         router.replace("/")
         return
       }
-      
+
       // Hiển thị thông báo lỗi cho người dùng
       let errorMessage = "Đăng nhập Google thất bại. Vui lòng thử lại."
-      
+
       if (error === "google_login_failed") {
         errorMessage = "Không thể đăng nhập bằng Google. Backend đã xử lý nhưng không trả về token. Vui lòng kiểm tra backend hoặc đăng nhập bằng tên đăng nhập/mật khẩu."
       } else if (error === "google_invalid_code") {
         errorMessage = "Mã xác thực không hợp lệ. Vui lòng thử lại."
       }
-      
+
       // Đánh dấu đã xử lý callback trước khi hiển thị message
       setHasProcessedCallback(true)
-      
+
       // Hiển thị message với duration dài hơn để user có thể đọc
       // Sử dụng setTimeout để đảm bảo state đã được cập nhật
       setTimeout(() => {
@@ -200,7 +214,7 @@ export default function Home() {
           duration: 6,
         })
       }, 0)
-      
+
       // Delay một chút trước khi redirect để đảm bảo message được hiển thị
       setTimeout(() => {
         // Chuyển về trang chủ và xóa error khỏi URL
@@ -253,6 +267,7 @@ export default function Home() {
             description="Những cuốn sách được yêu thích nhất hiện tại"
             type="trending"
             limit={4}
+            books={bestSellingBooks}
           />
 
           <RecommendationSection
