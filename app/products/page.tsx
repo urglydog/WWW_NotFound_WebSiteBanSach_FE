@@ -27,24 +27,34 @@ export default function ProductsPage() {
   const [totalElements, setTotalElements] = useState(0);
   const itemsPerPage = 9;
 
-  // Fetch books from API
+  // Fetch ALL books from API on initial load
   useEffect(() => {
     const fetchBooks = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await booksService.getBooks({
-          page: currentPage - 1,
-          pageSize: itemsPerPage,
-        });
-        setBooks(response.content || []);
-        setTotalElements(response.totalElements || 0);
+        let allBooksData: Book[] = [];
+        let page = 0;
+        let totalPages = 1;
+
+        // Fetch ALL books page by page
+        while (page < totalPages) {
+          const response = await booksService.getBooks({
+            page,
+            pageSize: 100,
+          });
+
+          allBooksData = [...allBooksData, ...(response.content || [])];
+          totalPages = response.totalPages;
+          page++;
+        }
+
+        setBooks(allBooksData);
+        setTotalElements(allBooksData.length);
 
         // Calculate total pages based on totalElements and itemsPerPage
-        const calculatedPages = Math.ceil(
-          (response.totalElements || 0) / itemsPerPage
-        );
-        setTotalPages(calculatedPages || response.totalPages || 1);
+        const calculatedPages = Math.ceil(allBooksData.length / itemsPerPage);
+        setTotalPages(calculatedPages || 1);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch books");
         console.error("Error fetching books:", err);
@@ -54,7 +64,7 @@ export default function ProductsPage() {
     };
 
     fetchBooks();
-  }, [currentPage]);
+  }, []); // Only fetch once on mount
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
