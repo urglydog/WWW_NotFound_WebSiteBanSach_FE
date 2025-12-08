@@ -33,18 +33,57 @@ export default function ProductsPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await booksService.getBooks({
-          page: currentPage - 1,
-          pageSize: itemsPerPage,
-        });
-        setBooks(response.content || []);
-        setTotalElements(response.totalElements || 0);
 
-        // Calculate total pages based on totalElements and itemsPerPage
-        const calculatedPages = Math.ceil(
-          (response.totalElements || 0) / itemsPerPage
-        );
-        setTotalPages(calculatedPages || response.totalPages || 1);
+        // Build API filters matching backend BookRequest
+        const apiFilters: any = {
+          page: currentPage - 1, // Backend uses 0-based index
+          size: itemsPerPage,
+        };
+
+        // Add price range filters
+        if (filters.priceRange[0] > 0) {
+          apiFilters.minPrice = filters.priceRange[0];
+        }
+        if (filters.priceRange[1] < 10000000) {
+          apiFilters.maxPrice = filters.priceRange[1];
+        }
+
+        // Add rating filter (convert to minRating)
+        if (filters.ratings.length > 0) {
+          apiFilters.minRating = Math.min(...filters.ratings);
+        }
+
+        // Add category filter (danhMuc array)
+        if (filters.categories.length > 0) {
+          apiFilters.danhMuc = filters.categories;
+        }
+
+        // Map sortBy to backend option field
+        switch (filters.sortBy) {
+          case 'newest':
+            apiFilters.option = 'moinhat';
+            break;
+          case 'popular':
+            apiFilters.option = 'phobien';
+            break;
+          case 'price-low':
+            apiFilters.option = 'thapdencao';
+            break;
+          case 'price-high':
+            apiFilters.option = 'caodenthap';
+            break;
+          case 'rating':
+            apiFilters.option = 'danhgiacao';
+            break;
+          default:
+            apiFilters.option = 'phobien';
+        }
+
+        const response = await booksService.getBooks(apiFilters);
+
+        setBooks(response.content || []);
+        setTotalPages(response.totalPages || 1);
+        setTotalElements(response.totalElements || 0);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch books");
         console.error("Error fetching books:", err);
@@ -54,58 +93,23 @@ export default function ProductsPage() {
     };
 
     fetchBooks();
-  }, [currentPage]);
+  }, [currentPage, filters]); // Re-fetch when page or filters change
 
-  // Filter and sort products
+  // Filter and sort products - Now handled by backend
   const filteredProducts = useMemo(() => {
-    let result = [...books];
-
-    // Filter by category
-    if (filters.categories.length > 0) {
-      result = result.filter((book) =>
-        book.categoryId?.some((catId) => filters.categories.includes(catId))
-      );
-    }
-
-    // Filter by price range - handle missing prices
-    result = result.filter((book) => {
-      const price = book.price || 0;
-      return price >= filters.priceRange[0] && price <= filters.priceRange[1];
-    });
-
-    // Filter by rating
-    if (filters.ratings.length > 0) {
-      result = result.filter((book) =>
-        filters.ratings.some((rating) => (book.averageRating || 0) >= rating)
-      );
-    }
-
-    // Sort
-    switch (filters.sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
-        break;
-      case "newest":
-        result.reverse();
-        break;
-      case "popular":
-      default:
-        result.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-    }
-
-    return result;
-  }, [books, filters]);
+    // All filtering is done server-side, just return books
+    return books;
+  }, [books]);
 
   const handleReset = () => {
     setFilters(defaultFilters);
     setCurrentPage(1);
   };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.categories, filters.priceRange, filters.ratings, filters.sortBy]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -182,9 +186,7 @@ export default function ProductsPage() {
               ) : filteredProducts.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                    {filteredProducts
-                      .slice(0, itemsPerPage)
-                      .map((book, index) => {
+                    {filteredProducts.map((book, index) => {
                         try {
                           return (
                             <ProductCard
