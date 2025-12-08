@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { chatService, type AttachmentRequest as ChatAttachmentRequest } from "@/lib/services/chat.service";
 
 interface Attachment {
   id: string;
@@ -67,6 +68,7 @@ export function ChatbotFloatingButton() {
   const [loading, setLoading] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,45 +123,57 @@ export function ChatbotFloatingButton() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input.trim();
+    const currentAttachments = [...attachments];
     setInput("");
     setAttachments([]);
     setLoading(true);
 
-    // TODO: Gọi API chatbot ở đây khi backend sẵn sàng
-    // Hiện tại chỉ hiển thị message placeholder
-    setTimeout(() => {
+    try {
+      // Convert attachments to API format
+      const chatAttachments: ChatAttachmentRequest[] = currentAttachments.map(
+        (att) => ({
+          type: att.type,
+          url: att.url,
+          name: att.name,
+          location: att.location,
+        })
+      );
+
+      // Call chatbot API
+      const response = await chatService.sendMessage({
+        message: currentInput || "",
+        sessionId: sessionId,
+        attachments: chatAttachments.length > 0 ? chatAttachments : undefined,
+      });
+
+      // Update sessionId if received
+      if (response.sessionId) {
+        setSessionId(response.sessionId);
+      }
+
       const botMessage: Message = {
         id: Date.now().toString() + "bot",
-        text: "Cảm ơn bạn đã liên hệ! Tính năng chatbot AI đang được phát triển. Chúng tôi sẽ sớm tích hợp trợ lý AI để hỗ trợ bạn tốt hơn.",
+        text: response.response,
         isUser: false,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      const errorMessage: Message = {
+        id: Date.now().toString() + "error",
+        text:
+          error.message ||
+          "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setLoading(false);
-    }, 1000);
-
-    // Khi backend sẵn sàng, thay thế bằng:
-    // try {
-    //   const response = await chatService.sendMessage(input.trim(), attachments);
-    //   const botMessage: Message = {
-    //     id: Date.now().toString() + "bot",
-    //     text: response,
-    //     isUser: false,
-    //     timestamp: new Date(),
-    //   };
-    //   setMessages((prev) => [...prev, botMessage]);
-    // } catch (error) {
-    //   const errorMessage: Message = {
-    //     id: Date.now().toString() + "error",
-    //     text: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
-    //     isUser: false,
-    //     timestamp: new Date(),
-    //   };
-    //   setMessages((prev) => [...prev, errorMessage]);
-    // } finally {
-    //   setLoading(false);
-    // }
-  }, [input, attachments, loading]);
+    }
+  }, [input, attachments, loading, sessionId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -268,7 +282,24 @@ export function ChatbotFloatingButton() {
       </button>
 
       {/* Chatbot Dialog */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          // Reset session when closing dialog (optional - comment out if you want to keep session)
+          // if (!open) {
+          //   setSessionId(null);
+          //   setMessages([
+          //     {
+          //       id: "welcome",
+          //       text: "Xin chào! Tôi là trợ lý AI của Nhà Sách Online. Tôi có thể giúp bạn tìm sách, tư vấn về sản phẩm, hoặc trả lời các câu hỏi về đơn hàng. Bạn cần hỗ trợ gì hôm nay?",
+          //       isUser: false,
+          //       timestamp: new Date(),
+          //     },
+          //   ]);
+          // }
+        }}
+      >
         <DialogContent
           className={cn(
             "flex h-[600px] max-w-md flex-col p-0",
@@ -579,7 +610,7 @@ export function ChatbotFloatingButton() {
               </Button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground text-center">
-              Nhấn Enter để gửi • Tính năng đang được phát triển
+              Nhấn Enter để gửi
             </p>
           </div>
         </DialogContent>
