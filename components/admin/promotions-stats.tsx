@@ -1,4 +1,4 @@
-import { Tag, Play, Pause, Percent } from 'lucide-react'
+import { Tag, Play, Pause, Percent, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
@@ -6,6 +6,7 @@ interface PromotionStats {
   total: number
   active: number
   inactive: number
+  expired?: number
   averageDiscount: number
 }
 
@@ -38,6 +39,13 @@ export function PromotionsStats({ stats, className }: PromotionsStatsProps) {
       tone: "text-amber-600"
     },
     {
+      label: "Đã hết hạn",
+      value: stats.expired || 0,
+      change: `${stats.total > 0 ? Math.round(((stats.expired || 0) / stats.total) * 100) : 0}% tổng số`,
+      icon: Clock,
+      tone: "text-red-600"
+    },
+    {
       label: "Giảm giá TB",
       value: `${stats.averageDiscount}%`,
       change: "Trung bình tất cả",
@@ -47,7 +55,7 @@ export function PromotionsStats({ stats, className }: PromotionsStatsProps) {
   ]
 
   return (
-    <div className={cn("grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-4", className)}>
+    <div className={cn("grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-5", className)}>
       {statItems.map((stat) => (
         <Card key={stat.label} className="border border-border/80 rounded-2xl shadow-sm bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
