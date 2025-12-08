@@ -22,18 +22,21 @@ export default function Home() {
   const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
   const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
   const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
+  const [literatureBooks, setLiteratureBooks] = useState<Book[]>([])
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const [bestSellers, suggested, categoriesWithBooks] = await Promise.all([
+        const [bestSellers, suggested, categoriesWithBooks, literatureResponse] = await Promise.all([
           booksService.getBestSellers(4),
           booksService.getSuggestedBooks(4),
-          booksService.getBooksByPopularCategories(3)
+          booksService.getBooksByPopularCategories(3),
+          booksService.getBooks({ category: "Văn học", pageSize: 4 })
         ])
         setBestSellingBooks(bestSellers)
         setSuggestedBooks(suggested)
         setPopularCategoriesWithBooks(categoriesWithBooks)
+        setLiteratureBooks(literatureResponse.content)
       } catch (error) {
         console.error("Failed to fetch books:", error)
       }
@@ -288,11 +291,12 @@ export default function Home() {
           />
 
           <RecommendationSection
-            title="Sách văn học"
-            description="Khám phá những tác phẩm văn học hay nhất"
+            title="Khám phá"
+            description="Khám phá những tác phẩm hay nhất"
             type="category"
             categoryFilter="Văn học"
             limit={4}
+            books={literatureBooks}
           />
         </div>
 
