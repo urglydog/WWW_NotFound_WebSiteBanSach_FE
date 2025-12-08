@@ -1,141 +1,232 @@
 /**
  * Orders Service
- * Handles all order-related API calls
+ * Handles all order-related API calls matching the backend OrderController
  */
 
-import { apiClient, PaginatedResponse } from "../api-client"
+import { apiClient } from "../api-client"
 
-export interface OrderItem {
+// --- DTO Interfaces ---
+
+export interface AddressResponse {
+  id: string
+  recipientName: string
+  phoneNumber: string
+  street: string
+  ward: string
+  district: string
+  province: string
+  latitude: number
+  longitude: number
+}
+
+export interface OrderItemResponse {
   id: string
   bookId: string
   bookTitle: string
-  bookImage: string
+  bookIsbn: string
+  bookImageUrl: string
   quantity: number
-  price: number
-  discount?: number
+  unitPrice: number
   subtotal: number
 }
 
-export interface Order {
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "COMPLETED"
+
+export interface OrderResponse {
   id: string
-  userId: string
-  orderNumber: string
-  status: "pending" | "processing" | "confirmed" | "shipping" | "delivered" | "cancelled"
-  channel: "online" | "store" | "phone"
-  items: OrderItem[]
+  orderCode: string
+  orderDate: string // LocalDateTime
+  status: OrderStatus
   subtotal: number
-  shippingFee: number
-  discount: number
   total: number
-  paymentMethod: "cod" | "credit_card" | "momo" | "vnpay" | "bank_transfer"
-  paymentStatus: "pending" | "paid" | "failed" | "refunded"
-  shippingAddress: {
-    fullName: string
-    phoneNumber: string
-    address: string
-    city: string
-    district: string
-    ward: string
-  }
-  note?: string
-  createdAt: string
-  updatedAt: string
-}
+  paymentMethod: string
+  taxAmount: number
+  shippingFee: number
 
-export interface CreateOrderRequest {
-  items: {
-    bookId: string
-    quantity: number
-  }[]
-  shippingAddress: Order["shippingAddress"]
-  paymentMethod: Order["paymentMethod"]
-  note?: string
+  // Promotion info
   promotionCode?: string
-}
+  promotionName?: string
+  discountPercent?: number
+  discountAmount?: number
 
-export interface UpdateOrderStatusRequest {
-  status: Order["status"]
+  // Customer info
+  customerId: string
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+  customerMembershipTier: string
+
+  items: OrderItemResponse[]
+  shippingAddress: AddressResponse
   note?: string
 }
 
-export interface OrderFilters {
-  page?: number
-  pageSize?: number
-  status?: Order["status"]
-  channel?: Order["channel"]
-  paymentStatus?: Order["paymentStatus"]
-  search?: string
-  startDate?: string
-  endDate?: string
-  sortBy?: "createdAt" | "total"
-  sortOrder?: "asc" | "desc"
+export interface CheckoutRequest {
+  addressId: string
+  paymentMethod: string // "COD", "VNPay", "ZaloPay", "MoMo"
+  note?: string
+  discountCode?: string
+  bookIds?: string[] // If null/empty -> checkout all cart
+  redirectUrl?: string // URL to redirect back after payment
 }
+
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED"
+
+export interface PaymentResponse {
+  paymentId: string
+  orderId: string
+  paymentMethod: string
+  amount: number
+  paymentDate: string
+  status: PaymentStatus
+}
+
+export interface CreatePaymentResponse {
+  code: string
+  message: string
+  paymentUrl: string
+  payment: PaymentResponse
+}
+
+// Spring Data Page interface
+export interface Page<T> {
+  content: T[]
+  totalPages: number
+  totalElements: number
+  size: number
+  number: number // current page index (0-based)
+  numberOfElements: number
+  first: boolean
+  last: boolean
+  empty: boolean
+}
+
+// --- Service Implementation ---
 
 export const ordersService = {
   /**
-   * Get paginated list of orders with filters
+   * Get list of orders for the current logged-in user
+   * GET /api/orders
    */
-  async getOrders(filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
-    return apiClient.get<PaginatedResponse<Order>>("/orders", filters)
+  async getMyOrders(): Promise<OrderResponse[]> {
+    return apiClient.get<OrderResponse[]>("/orders")
   },
 
   /**
-   * Get a single order by ID
+   * Get order details by ID
+   * GET /api/orders/{orderId}
    */
-  async getOrderById(id: string): Promise<Order> {
-    return apiClient.get<Order>(`/orders/${id}`)
-  },
-
-  /**
-   * Get current user's orders
-   */
-  async getMyOrders(filters?: Omit<OrderFilters, "search">): Promise<PaginatedResponse<Order>> {
-    return apiClient.get<PaginatedResponse<Order>>("/orders/my-orders", filters)
-  },
-
-  /**
-   * Create a new order
-   */
-  async createOrder(data: CreateOrderRequest): Promise<Order> {
-    return apiClient.post<Order>("/orders", data)
-  },
-
-  /**
-   * Update order status (Admin only)
-   */
-  async updateOrderStatus(id: string, data: UpdateOrderStatusRequest): Promise<Order> {
-    return apiClient.patch<Order>(`/orders/${id}/status`, data)
+  async getOrderById(orderId: string): Promise<OrderResponse> {
+    return apiClient.get<OrderResponse>(`/orders/${orderId}`)
   },
 
   /**
    * Cancel an order
+   * POST /api/orders/{orderId}/cancel
    */
-  async cancelOrder(id: string, reason?: string): Promise<Order> {
-    return apiClient.patch<Order>(`/orders/${id}/cancel`, { reason })
+  async cancelOrder(orderId: string): Promise<OrderResponse> {
+    return apiClient.post<OrderResponse>(`/orders/${orderId}/cancel`)
   },
 
   /**
-   * Get order statistics (Admin only)
+   * ADMIN: Get all orders with pagination
+   * GET /api/orders/admin/all?page=0&size=10
    */
-  async getOrderStats(startDate?: string, endDate?: string): Promise<{
-    totalOrders: number
-    totalRevenue: number
-    pendingOrders: number
-    completedOrders: number
-    cancelledOrders: number
-    averageOrderValue: number
-  }> {
-    return apiClient.get("/orders/stats", { startDate, endDate })
+  async getAllOrders(page: number = 0, size: number = 10): Promise<Page<OrderResponse>> {
+    return apiClient.get<Page<OrderResponse>>("/orders/admin/all", { page, size })
+  },
+  /**
+   * ADMIN: Update order status
+   * PUT /api/orders/admin/{orderId}/status?status=CONFIRMED
+   */
+  async updateOrderStatus(orderId: string, status: OrderStatus): Promise<OrderResponse> {
+    return apiClient.put<OrderResponse>(`/orders/admin/${orderId}/status?status=${status}`)
   },
 
   /**
-   * Validate promotion code
+   * ADMIN: Get orders by status
+   * GET /api/orders/admin/status/{status}
    */
-  async validatePromotion(code: string, total: number): Promise<{
-    valid: boolean
-    discount: number
-    message?: string
-  }> {
-    return apiClient.post("/orders/validate-promotion", { code, total })
+  async getOrdersByStatus(status: OrderStatus): Promise<OrderResponse[]> {
+    return apiClient.get<OrderResponse[]>(`/orders/admin/status/${status}`)
   },
+
+  /**
+   * ADMIN: Get total revenue
+   * GET /api/orders/admin/revenue
+   */
+  async getTotalRevenue(): Promise<number> {
+    return apiClient.get<number>("/orders/admin/revenue")
+  },
+
+  /**
+   * Count orders of current user
+   * GET /api/orders/count
+   */
+  async countMyOrders(): Promise<number> {
+    return apiClient.get<number>("/orders/count")
+  },
+
+  /**
+   * Checkout (COD)
+   * POST /api/orders/checkout
+   */
+  async checkout(data: CheckoutRequest): Promise<OrderResponse> {
+    return apiClient.post<OrderResponse>("/orders/checkout", data)
+  },
+
+  /**
+   * Checkout with VNPay
+   * POST /api/orders/checkout/vnpay
+   */
+  async checkoutVNPay(data: CheckoutRequest): Promise<CreatePaymentResponse> {
+    return apiClient.post<CreatePaymentResponse>("/orders/checkout/vnpay", data)
+  },
+
+  /**
+   * Checkout with ZaloPay
+   * POST /api/orders/checkout/zalopay
+   */
+  async checkoutZaloPay(data: CheckoutRequest): Promise<CreatePaymentResponse> {
+    return apiClient.post<CreatePaymentResponse>("/orders/checkout/zalopay", data)
+  },
+
+  /**
+   * Checkout with MoMo
+   * POST /api/orders/checkout/momo
+   */
+  async checkoutMoMo(data: CheckoutRequest): Promise<CreatePaymentResponse> {
+    return apiClient.post<CreatePaymentResponse>("/orders/checkout/momo", data)
+  },
+
+  /**
+   * Verify MoMo Payment (Callback)
+   * POST /api/payment/momo/callback
+   */
+  async verifyMoMoPayment(data: MoMoCallbackRequest): Promise<PaymentResponse> {
+    return apiClient.post<PaymentResponse>("/payment/momo/callback", data)
+  },
+}
+
+export interface MoMoCallbackRequest {
+  partnerCode: string
+  orderId: string
+  requestId: string
+  amount: number
+  orderInfo: string
+  orderType: string
+  transId: string
+  resultCode: number
+  message: string
+  payType: string
+  responseTime: number
+  extraData: string
+  signature: string
 }
