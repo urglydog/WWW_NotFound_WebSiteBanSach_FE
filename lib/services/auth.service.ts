@@ -30,7 +30,7 @@ export interface AuthResponse {
     role: string;
     avatar?: string;
     avatarUrl?: string; // Google avatar URL
-    emailVerified?: boolean;
+    isEmailVerified?: boolean;
   };
 }
 

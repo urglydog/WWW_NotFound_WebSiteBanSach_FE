@@ -17,7 +17,7 @@ export interface User {
   username?: string;
   phone?: string;
   avatar?: string; // Can be avatarUrl from Google or custom avatar
-  emailVerified?: boolean;
+  isEmailVerified?: boolean;
   createdAt: string;
 }
 
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: parsedUser.username,
             phone: parsedUser.phone,
             avatar: parsedUser.avatar,
-            emailVerified: parsedUser.emailVerified ?? false,
+            isEmailVerified: parsedUser.isEmailVerified ?? false,
             createdAt: parsedUser.createdAt ?? new Date().toISOString(),
           });
         }
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role.toUpperCase(),
         username: response.user.username,
         avatar: response.user.avatar,
-        emailVerified: response.user.emailVerified ?? false,
+        isEmailVerified: response.user.isEmailVerified ?? false,
         createdAt: new Date().toISOString(),
       };
 
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role.toUpperCase(),
         username: response.user.username,
         avatar: response.user.avatar,
-        emailVerified: response.user.emailVerified ?? true,
+        isEmailVerified: response.user.isEmailVerified ?? true,
         createdAt: new Date().toISOString(),
       };
 
@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role.toUpperCase(),
         username: response.user.username,
         avatar: response.user.avatar,
-        emailVerified: response.user.emailVerified ?? false,
+        isEmailVerified: response.user.isEmailVerified ?? false,
         createdAt: new Date().toISOString(),
       };
 
