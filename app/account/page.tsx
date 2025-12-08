@@ -7,14 +7,21 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, ShoppingBag, Heart, Settings } from "lucide-react";
+import { LogOut, User, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { WishlistSection } from "@/components/account/wishlist-section";
+import { addressService, type Address } from "@/lib/services";
+import { AddressSelectModal } from "@/components/products/address-select-modal";
 
 export default function AccountPage() {
   const { user, logout, isLoading, setUserState } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("profile");
   const [localEmailVerified, setLocalEmailVerified] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   // Refresh user from localStorage on mount AND when emailVerified event fires
   useEffect(() => {
@@ -54,6 +61,49 @@ export default function AccountPage() {
       window.removeEventListener("emailVerified", handleEmailVerified);
     };
   }, [user, setUserState]);
+
+  // Load addresses when switching to addresses tab
+  useEffect(() => {
+    if (activeTab === "addresses" && user) {
+      loadAddresses();
+    }
+  }, [activeTab, user]);
+
+  const loadAddresses = async () => {
+    try {
+      setAddressesLoading(true);
+      const data = await addressService.getUserAddresses();
+      setAddresses(data);
+    } catch (error) {
+      console.error("Error loading addresses:", error);
+    } finally {
+      setAddressesLoading(false);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    if (!confirm("Bạn có chắc muốn xóa địa chỉ này?")) {
+      return;
+    }
+
+    try {
+      await addressService.deleteAddress(addressId);
+      await loadAddresses();
+    } catch (error) {
+      console.error("Error deleting address:", error);
+      alert("Có lỗi xảy ra khi xóa địa chỉ");
+    }
+  };
+
+  const handleEditAddress = (address: Address) => {
+    setEditingAddress(address);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleAddNewAddress = () => {
+    setEditingAddress(null);
+    setIsAddressModalOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -152,6 +202,17 @@ export default function AccountPage() {
                     Danh sách yêu thích
                   </button>
                   <button
+                    onClick={() => setActiveTab("addresses")}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
+                      activeTab === "addresses"
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <MapPin size={18} />
+                    Địa chỉ của tôi
+                  </button>
+                  <button
                     onClick={() => setActiveTab("settings")}
                     className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
                       activeTab === "settings"
@@ -237,20 +298,78 @@ export default function AccountPage() {
                 </div>
               )}
 
-              {activeTab === "wishlist" && (
+              {activeTab === "wishlist" && <WishlistSection />}
+
+              {activeTab === "addresses" && (
                 <div className="bg-card border border-border rounded-lg p-6">
-                  <h2 className="text-2xl font-bold text-foreground mb-6">
-                    Danh sách yêu thích
-                  </h2>
-                  <div className="text-center py-12">
-                    <Heart
-                      size={48}
-                      className="mx-auto text-muted-foreground mb-4 opacity-50"
-                    />
-                    <p className="text-muted-foreground">
-                      Danh sách yêu thích trống
-                    </p>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-foreground">
+                      Địa chỉ của tôi
+                    </h2>
+                    <Button onClick={handleAddNewAddress}>
+                      <MapPin size={18} className="mr-2" />
+                      Thêm địa chỉ mới
+                    </Button>
                   </div>
+                  
+                  {addressesLoading ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">Đang tải...</p>
+                    </div>
+                  ) : addresses.length === 0 ? (
+                    <div className="text-center py-12">
+                      <MapPin
+                        size={48}
+                        className="mx-auto text-muted-foreground mb-4 opacity-50"
+                      />
+                      <p className="text-muted-foreground">
+                        Chưa có địa chỉ nào
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {addresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className="border border-border rounded-lg p-4 hover:border-primary transition"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-foreground mb-1">
+                                {address.recipientName}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {address.phoneNumber}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                className="text-muted-foreground hover:text-primary transition"
+                                onClick={() => handleEditAddress(address)}
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                className="text-muted-foreground hover:text-destructive transition"
+                                onClick={() => handleDeleteAddress(address.id)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-foreground">
+                            {address.street}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {address.ward}, {address.district}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {address.province}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -294,6 +413,28 @@ export default function AccountPage() {
       </main>
 
       <Footer />
+
+      {/* Address Modal */}
+      <AddressSelectModal
+        isOpen={isAddressModalOpen}
+        onClose={() => {
+          setIsAddressModalOpen(false);
+          setEditingAddress(null);
+        }}
+        addresses={addresses}
+        onSelectAddress={() => {}}
+        onAddressCreated={() => {
+          loadAddresses();
+          setIsAddressModalOpen(false);
+          setEditingAddress(null);
+        }}
+        editingAddress={editingAddress}
+        onAddressUpdated={() => {
+          loadAddresses();
+          setIsAddressModalOpen(false);
+          setEditingAddress(null);
+        }}
+      />
     </div>
   );
 }
