@@ -37,25 +37,45 @@ export default function SearchPage() {
     fetchCategories();
   }, []);
 
-  // Fetch search results
+  // Fetch search results - Fetch ALL books from the system
   useEffect(() => {
     const fetchResults = async () => {
       try {
         setLoading(true);
+        let allBooksData: Book[] = [];
 
         if (query) {
-          const response = await booksService.searchBooks(query, {
-            page: 0,
-            pageSize: 50,
-          });
+          // Fetch all matching search results
+          let page = 0;
+          let totalPages = 1;
 
-          setResults(response.content || []);
+          while (page < totalPages) {
+            const response = await booksService.searchBooks(query, {
+              page,
+              pageSize: 100,
+            });
+
+            allBooksData = [...allBooksData, ...(response.content || [])];
+            totalPages = response.totalPages;
+            page++;
+          }
+          setResults(allBooksData);
         } else {
-          const response = await booksService.getBooks({
-            page: 0,
-            pageSize: 50,
-          });
-          setResults(response.content || []);
+          // Fetch ALL books from the system
+          let page = 0;
+          let totalPages = 1;
+
+          while (page < totalPages) {
+            const response = await booksService.getBooks({
+              page,
+              pageSize: 100,
+            });
+
+            allBooksData = [...allBooksData, ...(response.content || [])];
+            totalPages = response.totalPages;
+            page++;
+          }
+          setResults(allBooksData);
         }
       } catch (error) {
         console.error("Error fetching search results:", error);
