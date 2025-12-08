@@ -27,7 +27,7 @@ export default function ProductsPage() {
   const [totalElements, setTotalElements] = useState(0);
   const itemsPerPage = 9;
 
-  // Fetch books from API
+  // Fetch ALL books from API on initial load
   useEffect(() => {
     const fetchBooks = async () => {
       try {

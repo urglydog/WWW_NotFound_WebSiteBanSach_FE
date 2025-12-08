@@ -4,6 +4,12 @@
  */
 
 import { apiClient, PaginatedResponse } from "../api-client";
+import { Category } from "./categories.service";
+
+export interface CategoryWithBooks {
+  category: Category;
+  books: Book[];
+}
 
 export interface Book {
   id: string;
@@ -126,7 +132,21 @@ export const booksService = {
    * Get best-selling books
    */
   async getBestSellers(limit: number = 10): Promise<Book[]> {
-    return apiClient.get<Book[]>("/books/best-sellers", { limit });
+    return apiClient.get<Book[]>("/books/best-selling", { limit });
+  },
+
+  /**
+   * Get suggested books
+   */
+  async getSuggestedBooks(limit: number = 10): Promise<Book[]> {
+    return apiClient.get<Book[]>("/books/suggested", { limit });
+  },
+
+  /**
+   * Get books by popular categories
+   */
+  async getBooksByPopularCategories(limit: number = 3): Promise<CategoryWithBooks[]> {
+    return apiClient.get<CategoryWithBooks[]>("/books/by-popular-categories", { limit });
   },
 
   /**
