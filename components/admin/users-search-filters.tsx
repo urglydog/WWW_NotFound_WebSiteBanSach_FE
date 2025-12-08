@@ -14,9 +14,11 @@ interface DateRange {
 interface UsersSearchFiltersProps {
   searchTerm: string
   statusFilter: string
+  roleFilter?: string
   dateRange?: DateRange | null
   onSearchChange: (value: string) => void
   onStatusChange: (value: string) => void
+  onRoleChange?: (value: string) => void
   onDateRangeChange?: (range: DateRange | null) => void
   onReset: () => void
   className?: string
@@ -25,15 +27,17 @@ interface UsersSearchFiltersProps {
 export function UsersSearchFilters({
   searchTerm,
   statusFilter,
+  roleFilter = "all",
   dateRange,
   onSearchChange,
   onStatusChange,
+  onRoleChange,
   onDateRangeChange,
   onReset,
   className
 }: UsersSearchFiltersProps) {
 
-  const hasActiveFilters = searchTerm || statusFilter !== "all" || dateRange
+  const hasActiveFilters = searchTerm || statusFilter !== "all" || roleFilter !== "all" || dateRange
 
   const statusOptions = [
     { value: "all", label: "Tất cả trạng thái", icon: Users },
@@ -83,6 +87,25 @@ export function UsersSearchFilters({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Role Filter */}
+            {onRoleChange && (
+              <div className="space-y-2 sm:min-w-[200px]">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Vai trò
+                </label>
+                <Select value={roleFilter} onValueChange={onRoleChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn vai trò" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả vai trò</SelectItem>
+                    <SelectItem value="CUSTOMER">Khách hàng</SelectItem>
+                    <SelectItem value="ADMIN">Quản trị viên</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Date Range Filter */}
             {onDateRangeChange && (
