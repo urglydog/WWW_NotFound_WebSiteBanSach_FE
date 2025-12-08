@@ -107,19 +107,26 @@ export function LoginForm() {
             }
           }}
         >
-          <span className="flex w-full items-center justify-center gap-2">
-            <FcGoogle className="h-5 w-5" />
+              <span className="flex w-full items-center justify-center gap-2">
+                <FcGoogle className="h-5 w-5" />
             <span>Đăng nhập với Google</span>
-          </span>
-        </Button>
+              </span>
+            </Button>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Chưa có tài khoản?{" "}
-        <Link href="/signup" className="text-primary hover:text-primary/80 font-medium">
-          Đăng ký ngay
-        </Link>
-      </p>
+      <div className="text-center space-y-2">
+        <p className="text-sm text-muted-foreground">
+          <Link href="/forgot-password" className="text-primary hover:text-primary/80 font-medium">
+            Quên mật khẩu?
+          </Link>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Chưa có tài khoản?{" "}
+          <Link href="/signup" className="text-primary hover:text-primary/80 font-medium">
+            Đăng ký ngay
+          </Link>
+        </p>
+      </div>
     </form>
   )
 }

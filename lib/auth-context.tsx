@@ -16,8 +16,8 @@ export interface User {
   role: "ADMIN" | "CUSTOMER" | string;
   username?: string;
   phone?: string;
-  avatar?: string;
-  emailVerified?: boolean;
+  avatar?: string; // Can be avatarUrl from Google or custom avatar
+  isEmailVerified?: boolean;
   createdAt: string;
 }
 
@@ -56,13 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate checking if user is logged in on mount
+  // Load user from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("user");
-    if (stored) {
+    const token = localStorage.getItem("authToken");
+    
+    if (stored && token) {
       try {
         const parsedUser = JSON.parse(stored) as Partial<User>;
-        if (parsedUser && typeof parsedUser === "object") {
+        if (parsedUser && typeof parsedUser === "object" && parsedUser.id) {
           setUser({
             id: parsedUser.id ?? "",
             email: parsedUser.email ?? "",
@@ -71,12 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: parsedUser.username,
             phone: parsedUser.phone,
             avatar: parsedUser.avatar,
-            emailVerified: parsedUser.emailVerified ?? false,
+            isEmailVerified: parsedUser.isEmailVerified ?? false,
             createdAt: parsedUser.createdAt ?? new Date().toISOString(),
           });
         }
       } catch {
         localStorage.removeItem("user");
+        localStorage.removeItem("authToken");
       }
     }
     setIsLoading(false);
@@ -97,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role.toUpperCase(),
         username: response.user.username,
         avatar: response.user.avatar,
-        emailVerified: response.user.emailVerified ?? false,
+        isEmailVerified: response.user.isEmailVerified ?? false,
         createdAt: new Date().toISOString(),
       };
 
@@ -166,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role.toUpperCase(),
         username: response.user.username,
         avatar: response.user.avatar,
-        emailVerified: response.user.emailVerified ?? true,
+        isEmailVerified: response.user.isEmailVerified ?? true,
         createdAt: new Date().toISOString(),
       };
 
@@ -220,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role.toUpperCase(),
         username: response.user.username,
         avatar: response.user.avatar,
-        emailVerified: response.user.emailVerified ?? false,
+        isEmailVerified: response.user.isEmailVerified ?? false,
         createdAt: new Date().toISOString(),
       };
 

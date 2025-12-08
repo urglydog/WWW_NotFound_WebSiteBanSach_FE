@@ -36,6 +36,7 @@ export { UsersTable } from "./users-table"
 export { UsersCardView } from "./users-card-view"
 export { UsersPageHeader } from "./users-page-header"
 export { UsersStats } from "./users-stats"
+export { AddUserModal } from "./add-user-modal"
 
 // Admin Components - Shared Layout
 export { AdminSidebar } from "./sidebar"

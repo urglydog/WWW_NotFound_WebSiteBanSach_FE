@@ -2,14 +2,19 @@
 
 import type { Book } from "@/lib/services/books.service";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/lib/cart-context";
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Star, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface ProductCardProps {
   book: Book;
 }
 
 export function ProductCard({ book }: ProductCardProps) {
+  const { addToCart, loading: cartLoading } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+
   // Log invalid data but still render with fallbacks
   if (!book || !book.id || !book.title) {
     console.warn("Invalid book data, using fallbacks:", book);
@@ -18,12 +23,30 @@ export function ProductCard({ book }: ProductCardProps) {
   const bookId = book?.id || `unknown-${Date.now()}`;
   const price = book?.price || 0;
   const discountPrice = book?.discountPrice || price;
+
   const discount =
     discountPrice < price
       ? Math.round(((price - discountPrice) / price) * 100)
       : 0;
   // Check stock: stockQuantity must be a number > 0
   const inStock = (book?.stockQuantity ?? 0) > 0;
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!inStock || isAdding) return;
+
+    setIsAdding(true);
+    try {
+      await addToCart(bookId, 1);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <Link href={`/products/${bookId}`}>
       <div className="group cursor-pointer h-full flex flex-col">
@@ -94,12 +117,19 @@ export function ProductCard({ book }: ProductCardProps) {
           {/* Add to Cart Button */}
           <Button
             className="w-full bg-primary hover:bg-primary/90"
-            disabled={!inStock}
-            onClick={(e) => {
-              e.preventDefault();
-            }}
+            disabled={!inStock || isAdding || cartLoading}
+            onClick={handleAddToCart}
           >
-            {inStock ? "Thêm vào giỏ" : "Hết hàng"}
+            {isAdding ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Đang thêm...
+              </>
+            ) : inStock ? (
+              "Thêm vào giỏ"
+            ) : (
+              "Hết hàng"
+            )}
           </Button>
         </div>
       </div>
