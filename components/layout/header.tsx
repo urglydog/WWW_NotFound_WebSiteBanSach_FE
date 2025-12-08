@@ -1,19 +1,20 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ShoppingCart, Search, Menu, X, User } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { useCart } from "@/lib/cart-context"
-import { useAuth } from "@/lib/auth-context"
-import { SearchModal } from "@/components/search/search-modal"
+import Link from "next/link";
+import { ShoppingCart, Search, Menu, X, User } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
+import { SearchModal } from "@/components/search/search-modal";
+import Image from "next/image";
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const { state, dispatch } = useCart()
-  const { user } = useAuth()
-  const cartCount = state.items.reduce((sum, item) => sum + item.quantity, 0)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const { state, dispatch } = useCart();
+  const { user } = useAuth();
+  const cartCount = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <>
@@ -24,9 +25,14 @@ export function Header() {
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">📚</span>
-              </div>
+              <Image
+                src="/logo_not_found.png"
+                alt="Not Found Bookstore"
+                width={48}
+                height={48}
+                priority
+                className="h-12 w-12 object-contain"
+              />
               <span className="hidden text-lg font-semibold text-foreground sm:inline md:text-xl">
                 Nhà Sách Online
               </span>
@@ -34,13 +40,22 @@ export function Header() {
 
             {/* Navigation - Desktop */}
             <nav className="hidden md:flex items-center gap-8">
-              <Link href="/products" className="text-foreground hover:text-primary transition">
+              <Link
+                href="/products"
+                className="text-foreground hover:text-primary transition"
+              >
                 Cửa hàng
               </Link>
-              <Link href="/categories" className="text-foreground hover:text-primary transition">
+              <Link
+                href="/categories"
+                className="text-foreground hover:text-primary transition"
+              >
                 Danh mục
               </Link>
-              <Link href="/about" className="text-foreground hover:text-primary transition">
+              <Link
+                href="/about"
+                className="text-foreground hover:text-primary transition"
+              >
                 Về chúng tôi
               </Link>
             </nav>
@@ -73,12 +88,32 @@ export function Header() {
                   href="/account"
                   className="flex items-center gap-2 rounded-lg p-2 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <User className="h-5 w-5" />
-                  <span className="hidden text-sm font-medium sm:inline">{user.fullName}</span>
+                  {user.avatar ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                      <Image
+                        src={user.avatar}
+                        alt={user.fullName || "Avatar"}
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {(user.fullName?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}
+                    </div>
+                  )}
+                  <span className="hidden text-sm font-medium sm:inline">
+                    {user.fullName}
+                  </span>
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" size="sm" className="hidden bg-transparent sm:inline-flex">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hidden bg-transparent sm:inline-flex"
+                  >
                     Đăng nhập
                   </Button>
                 </Link>
@@ -91,7 +126,11 @@ export function Header() {
                 aria-expanded={mobileMenuOpen}
                 aria-label="Mở menu"
               >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
               </button>
             </div>
           </div>
@@ -129,7 +168,11 @@ export function Header() {
                   Tài khoản
                 </Link>
               ) : (
-                <Link href="/login" className="w-full" onClick={() => setMobileMenuOpen(false)}>
+                <Link
+                  href="/login"
+                  className="w-full"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   <Button className="w-full">Đăng nhập</Button>
                 </Link>
               )}
@@ -138,5 +181,5 @@ export function Header() {
         </div>
       </header>
     </>
-  )
+  );
 }
