@@ -10,6 +10,9 @@ interface CartContextType {
   cart: Cart | null
   itemCount: number
   isOpen: boolean
+  selectedItems: string[]
+  toggleItemSelection: (bookId: string) => void
+  selectAll: (selected: boolean) => void
   loading: boolean
   addToCart: (bookId: string, quantity?: number) => Promise<void>
   updateQuantity: (bookId: string, quantity: number) => Promise<void>
@@ -25,6 +28,7 @@ const CartContext = createContext<CartContextType | null>(null)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null)
   const [itemCount, setItemCount] = useState(0)
+  const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const { user, isAuthenticated } = useAuth()
@@ -37,6 +41,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       setCart(null)
       setItemCount(0)
+      setSelectedItems([])
     }
   }, [isAuthenticated])
 
@@ -48,11 +53,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const cartData = await cartService.getCart()
       setCart(cartData)
       setItemCount(cartData.itemCount || 0)
+      // By default select all items
+      if (cartData && cartData.items) {
+        setSelectedItems(cartData.items.map(item => item.bookId))
+      }
     } catch (error: any) {
       console.error("Failed to load cart:", error)
       // Don't show error toast for initial load, just log it
     } finally {
       setLoading(false)
+    }
+  }
+
+  const toggleItemSelection = (bookId: string) => {
+    setSelectedItems(prev => {
+      if (prev.includes(bookId)) {
+        return prev.filter(id => id !== bookId)
+      } else {
+        return [...prev, bookId]
+      }
+    })
+  }
+
+  const selectAll = (selected: boolean) => {
+    if (selected && cart?.items) {
+      setSelectedItems(cart.items.map(item => item.bookId))
+    } else {
+      setSelectedItems([])
     }
   }
 
@@ -72,6 +99,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // Reload cart to get updated state
       await loadCart()
+
+      // Add the new item to selection if it's not already there (though loadCart selects all, this ensures it)
+      setSelectedItems(prev => prev.includes(bookId) ? prev : [...prev, bookId])
 
       toast({
         title: "Đã thêm vào giỏ hàng",
@@ -128,6 +158,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Reload cart to get updated state
       await loadCart()
 
+      // Remove from selection
+      setSelectedItems(prev => prev.filter(id => id !== bookId))
+
       toast({
         title: "Đã xóa",
         description: "Sản phẩm đã được xóa khỏi giỏ hàng",
@@ -153,6 +186,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       setCart(null)
       setItemCount(0)
+      setSelectedItems([])
 
       toast({
         title: "Đã xóa giỏ hàng",
@@ -178,6 +212,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         cart,
         itemCount,
+        selectedItems,
+        toggleItemSelection,
+        selectAll,
         isOpen,
         loading,
         addToCart,

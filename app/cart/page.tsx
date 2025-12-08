@@ -4,16 +4,31 @@ import { useCart } from "@/lib/cart-context"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { Trash2, Plus, Minus, Loader2 } from "lucide-react"
 
 export default function CartPage() {
-  const { cart, updateQuantity, removeItem, clearCart, loading } = useCart()
+  const {
+    cart,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    loading,
+    selectedItems,
+    toggleItemSelection,
+    selectAll
+  } = useCart()
 
   const items = cart?.items || []
-  const subtotal = cart?.totalPrice || 0
+
+  // Calculate total based on selected items
+  const selectedCartItems = items.filter(item => selectedItems.includes(item.bookId))
+  const subtotal = selectedCartItems.reduce((sum, item) => sum + ((item.bookDiscountPrice ?? item.bookPrice) * item.quantity), 0)
   const shipping = 0
   const total = subtotal + shipping
+
+  const isAllSelected = items.length > 0 && selectedItems.length === items.length
 
   if (!loading && items.length === 0) {
     return (
@@ -45,12 +60,34 @@ export default function CartPage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Cart Items */}
             <div className="lg:col-span-2">
+
+              {/* Select All Header */}
+              <div className="flex items-center gap-2 mb-4 p-4 border border-border rounded-lg bg-card">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={(checked) => selectAll(!!checked)}
+                  id="select-all"
+                />
+                <label htmlFor="select-all" className="font-medium cursor-pointer select-none">
+                  Chọn tất cả ({items.length} sản phẩm)
+                </label>
+              </div>
+
               <div className="space-y-4">
                 {items.map((item) => (
                   <div
                     key={item.bookId}
-                    className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 transition hover:shadow-md sm:flex-row"
+                    className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 transition hover:shadow-md sm:flex-row items-start"
                   >
+                    {/* Checkbox */}
+                    <div className="pt-2 sm:pt-0 sm:self-center">
+                      <Checkbox
+                        checked={selectedItems.includes(item.bookId)}
+                        onCheckedChange={() => toggleItemSelection(item.bookId)}
+                        aria-label={`Select ${item.bookTitle}`}
+                      />
+                    </div>
+
                     {/* Image */}
                     <div className="flex h-40 w-full shrink-0 items-center justify-center rounded bg-muted sm:h-32 sm:w-24">
                       <img
@@ -96,11 +133,16 @@ export default function CartPage() {
                           </div>
                           <div className="text-left sm:text-right">
                             <p className="text-lg font-bold text-primary">
-                              {(item.bookPrice * item.quantity).toLocaleString("vi-VN")}₫
+                              {((item.bookDiscountPrice ?? item.bookPrice) * item.quantity).toLocaleString("vi-VN")}₫
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {item.bookPrice.toLocaleString("vi-VN")}₫ x {item.quantity}
+                              {(item.bookDiscountPrice ?? item.bookPrice).toLocaleString("vi-VN")}₫ x {item.quantity}
                             </p>
+                            {item.bookDiscountPrice && (
+                              <p className="text-xs text-muted-foreground line-through">
+                                {item.bookPrice.toLocaleString("vi-VN")}₫
+                              </p>
+                            )}
                           </div>
                         </div>
                         <button
@@ -134,6 +176,10 @@ export default function CartPage() {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Đã chọn:</span>
+                    <span className="font-medium">{selectedItems.length} sản phẩm</span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Tạm tính:</span>
                     <span className="font-medium">{subtotal.toLocaleString("vi-VN")}₫</span>
                   </div>
@@ -148,9 +194,9 @@ export default function CartPage() {
                   <span className="text-lg font-bold text-primary">{total.toLocaleString("vi-VN")}₫</span>
                 </div>
 
-                <Link href="/checkout" className="block">
-                  <Button className="mb-2 w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                    Thanh toán ngay
+                <Link href={selectedItems.length > 0 ? "/checkout" : "#"} className="block" onClick={(e) => selectedItems.length === 0 && e.preventDefault()}>
+                  <Button className="mb-2 w-full bg-primary hover:bg-primary/90" disabled={loading || selectedItems.length === 0}>
+                    Thanh toán ({selectedItems.length})
                   </Button>
                 </Link>
                 <Link href="/products">
