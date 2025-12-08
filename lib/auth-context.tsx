@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem("user");
     const token = localStorage.getItem("authToken");
-    
+
     if (stored && token) {
       try {
         const parsedUser = JSON.parse(stored) as Partial<User>;
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           response.user.email.split("@")[0],
         role: response.user.role.toUpperCase(),
         username: response.user.username,
-        avatar: response.user.avatar,
+        avatar: response.user.avatarUrl || response.user.avatar,
         isEmailVerified: response.user.isEmailVerified ?? false,
         createdAt: new Date().toISOString(),
       };
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           response.user.email.split("@")[0],
         role: response.user.role.toUpperCase(),
         username: response.user.username,
-        avatar: response.user.avatar,
+        avatar: response.user.avatarUrl || response.user.avatar,
         isEmailVerified: response.user.isEmailVerified ?? true,
         createdAt: new Date().toISOString(),
       };

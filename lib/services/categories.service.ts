@@ -36,6 +36,13 @@ export const categoriesService = {
   },
 
   /**
+   * Get popular categories
+   */
+  async getPopularCategories(limit: number = 6): Promise<Category[]> {
+    return apiClient.get<Category[]>("/categories/popular", { limit })
+  },
+
+  /**
    * Get a single category by ID
    */
   async getCategoryById(id: string): Promise<Category> {

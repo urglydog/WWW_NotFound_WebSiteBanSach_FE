@@ -9,11 +9,17 @@ import { useAuth } from "@/lib/auth-context";
 import { SearchModal } from "@/components/search/search-modal";
 import Image from "next/image";
 
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { itemCount, toggleCart } = useCart();
   const { user } = useAuth();
+  const pathname = usePathname();
+
+  const isActive = (path: string) => pathname === path;
 
   return (
     <>
@@ -41,19 +47,28 @@ export function Header() {
             <nav className="hidden md:flex items-center gap-8">
               <Link
                 href="/products"
-                className="text-foreground hover:text-primary transition"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive("/products") ? "text-primary font-bold" : "text-foreground"
+                )}
               >
                 Cửa hàng
               </Link>
               <Link
                 href="/categories"
-                className="text-foreground hover:text-primary transition"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive("/categories") ? "text-primary font-bold" : "text-foreground"
+                )}
               >
                 Danh mục
               </Link>
               <Link
                 href="/about"
-                className="text-foreground hover:text-primary transition"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive("/about") ? "text-primary font-bold" : "text-foreground"
+                )}
               >
                 Về chúng tôi
               </Link>
@@ -139,21 +154,30 @@ export function Header() {
             <nav className="flex flex-col gap-2 pb-4 md:hidden">
               <Link
                 href="/products"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-muted",
+                  isActive("/products") ? "bg-muted text-primary font-bold" : "text-foreground"
+                )}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Cửa hàng
               </Link>
               <Link
                 href="/categories"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-muted",
+                  isActive("/categories") ? "bg-muted text-primary font-bold" : "text-foreground"
+                )}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Danh mục
               </Link>
               <Link
                 href="/about"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-muted",
+                  isActive("/about") ? "bg-muted text-primary font-bold" : "text-foreground"
+                )}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Về chúng tôi
