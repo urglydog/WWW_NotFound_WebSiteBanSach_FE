@@ -19,7 +19,7 @@ interface UserProfile {
   fullName?: string;
   phoneNumber?: string | null;
   role: string;
-  emailVerified?: boolean;
+  isEmailVerified?: boolean;
   avatarUrl?: string;
   dateOfBirth?: string | null;
   gender?: string | null;
@@ -44,66 +44,71 @@ export default function AccountPage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   
-  // Fetch user profile from API - fetch khi user có và chưa fetch
-  useEffect(() => {
-    // Tránh fetch nhiều lần
-    if (hasFetchedProfile) {
-      return;
-    }
+  // // Fetch user profile from API - fetch khi user có và chưa fetch
+  // useEffect(() => {
+  //   // Tránh fetch nhiều lần
+  //   if (hasFetchedProfile) {
+  //     return;
+  //   }
 
-    const token = localStorage.getItem("authToken");
-    if (!token || !user) {
-      setLoadingProfile(false);
-      return;
-    }
+  //   const token = localStorage.getItem("authToken");
+  //   if (!token || !user) {
+  //     setLoadingProfile(false);
+  //     return;
+  //   }
 
-    const fetchUserProfile = async () => {
-      // Đánh dấu đã fetch để tránh fetch lại
-      setHasFetchedProfile(true);
+  //   console.log("abadsadasdsadsadsadsadsadsadsadsadsa")
 
-      try {
-        const profile = await usersService.getMyProfile();
-        setUserProfile(profile as UserProfile);
-        
-        // Update AuthContext with latest user info including avatarUrl
-        // Chỉ update nếu có thay đổi thực sự để tránh trigger lại
-        const updatedUser = {
-          ...user,
-          avatar: profile.avatarUrl || profile.avatar || user.avatar,
-          emailVerified: profile.emailVerified ?? user.emailVerified,
-          fullName: profile.fullName || user.fullName,
-          phone: profile.phoneNumber || user.phone,
-          username: profile.username || user.username,
-        };
-        
-        // Chỉ update nếu có thay đổi
-        const hasChanges = 
-          updatedUser.avatar !== user.avatar ||
-          updatedUser.emailVerified !== user.emailVerified ||
-          updatedUser.fullName !== user.fullName ||
-          updatedUser.phone !== user.phone ||
-          updatedUser.username !== user.username;
-        
-        if (hasChanges) {
-          setUserState(updatedUser);
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-        }
-        
-        setLocalEmailVerified(profile.emailVerified || false);
-      } catch (error) {
-        console.error("Failed to fetch user profile:", error);
-        // Reset flag nếu có lỗi để có thể retry
-        setHasFetchedProfile(false);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
+  //   const fetchUserProfile = async () => {
+  //     // Đánh dấu đã fetch để tránh fetch lại
+  //     setHasFetchedProfile(true);
 
-    fetchUserProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Chạy khi user.id thay đổi (khi user được load)
+  //     try {
+  //       const profile = await usersService.getMyProfile();
+  //       setUserProfile(profile as UserProfile);
+        
+  //       // Update AuthContext with latest user info including avatarUrl
+  //       // Chỉ update nếu có thay đổi thực sự để tránh trigger lại
+  //       const updatedUser = {
+  //         ...user,
+  //         avatar: profile.avatarUrl || profile.avatar || user.avatar,
+  //         emailVerified: profile.emailVerified ?? user.isEmailVerified,
+  //         fullName: profile.fullName || user.fullName,
+  //         phone: profile.phoneNumber || user.phone,
+  //         username: profile.username || user.username,
+  //       };
+        
+  //       // Chỉ update nếu có thay đổi
+  //       const hasChanges = 
+  //         updatedUser.avatar !== user.avatar ||
+  //         updatedUser.emailVerified !== user.isEmailVerified ||
+  //         updatedUser.fullName !== user.fullName ||
+  //         updatedUser.phone !== user.phone ||
+  //         updatedUser.username !== user.username;
+        
+  //       if (hasChanges) {
+  //         setUserState(updatedUser);
+  //         localStorage.setItem("user", JSON.stringify(updatedUser));
+  //       }
+        
+  //       console.log("------------------------------------"+ profile.emailVerified)
+
+  //       setLocalEmailVerified(profile.emailVerified || false);
+  //     } catch (error) {
+  //       console.error("Failed to fetch user profile:", error);
+  //       // Reset flag nếu có lỗi để có thể retry
+  //       setHasFetchedProfile(false);
+  //     } finally {
+  //       setLoadingProfile(false);
+  //     }
+  //   };
+
+  //   fetchUserProfile();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [user?.id]); // Chạy khi user.id thay đổi (khi user được load)
 
   // Refresh user from localStorage on mount AND when emailVerified event fires
+
   useEffect(() => {
     const checkEmailVerified = () => {
       if (user) {
@@ -112,12 +117,35 @@ export default function AccountPage() {
         if (storedUser) {
           try {
             const freshUser = JSON.parse(storedUser);
-            const isNowVerified = freshUser.emailVerified === true;
+            const isNowVerified = freshUser.isEmailVerified === true;
+            setLocalEmailVerified(isNowVerified);
+            if (freshUser.isEmailVerified !== user.isEmailVerified) {
+              setUserState(freshUser);
+            }
+          } catch (err) {
+            console.error("Failed to refresh user from localStorage:", err);
+          }
+        }
+      }
+    };
+    checkEmailVerified();
+  }, []);
+
+
+  useEffect(() => {
+    const checkEmailVerified = () => {
+      if (user) {
+        const storedUser =
+          localStorage.getItem("user") || localStorage.getItem("currentUser");
+        if (storedUser) {
+          try {
+            const freshUser = JSON.parse(storedUser);
+            const isNowVerified = freshUser.isEmailVerified === true;
 
             setLocalEmailVerified(isNowVerified);
 
-            // Update context if emailVerified changed
-            if (freshUser.emailVerified !== user.emailVerified) {
+            // Update context if isEmailVerified changed
+            if (freshUser.isEmailVerified !== user.isEmailVerified) {
               setUserState(freshUser);
             }
           } catch (err) {
@@ -140,7 +168,7 @@ export default function AccountPage() {
     return () => {
       window.removeEventListener("emailVerified", handleEmailVerified);
     };
-  }, [user, setUserState]);
+  }, [user?.isEmailVerified]);
 
   // Load addresses when switching to addresses tab
   useEffect(() => {
