@@ -4,6 +4,12 @@
  */
 
 import { apiClient, PaginatedResponse } from "../api-client";
+import { Category } from "./categories.service";
+
+export interface CategoryWithBooks {
+  category: Category;
+  books: Book[];
+}
 
 export interface Book {
   id: string;
@@ -51,24 +57,37 @@ export interface UpdateBookRequest extends Partial<CreateBookRequest> {
 }
 
 export interface BookFilters {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  category?: string;
-  author?: string;
   minPrice?: number;
   maxPrice?: number;
-  inStock?: boolean;
-  sortBy?: "title" | "price" | "createdAt" | "sold" | "rating";
-  sortOrder?: "asc" | "desc";
+  minRating?: number;
+  option?: "moinhat" | "phobien" | "thapdencao" | "caodenthap" | "danhgiacao";
+  danhMuc?: string[]; // Array of category IDs
+  page?: number;
+  size?: number;
 }
 
 export const booksService = {
   /**
-   * Get paginated list of books with filters
+   * Get paginated list of books with filters using form-data
    */
   async getBooks(filters?: BookFilters): Promise<PaginatedResponse<Book>> {
-    return apiClient.get<PaginatedResponse<Book>>("/books", filters);
+    // Build form data for the request
+    const params: any = {};
+    
+    if (filters) {
+      if (filters.minPrice !== undefined) params.minPrice = filters.minPrice;
+      if (filters.maxPrice !== undefined) params.maxPrice = filters.maxPrice;
+      if (filters.minRating !== undefined) params.minRating = filters.minRating;
+      if (filters.option) params.option = filters.option;
+      if (filters.danhMuc && filters.danhMuc.length > 0) {
+        // Send array as multiple params: danhMuc=cat1&danhMuc=cat2
+        params.danhMuc = filters.danhMuc;
+      }
+      if (filters.page !== undefined) params.page = filters.page;
+      if (filters.size !== undefined) params.size = filters.size;
+    }
+    
+    return apiClient.get<PaginatedResponse<Book>>("/books/options", params);
   },
 
   /**
@@ -113,7 +132,21 @@ export const booksService = {
    * Get best-selling books
    */
   async getBestSellers(limit: number = 10): Promise<Book[]> {
-    return apiClient.get<Book[]>("/books/best-sellers", { limit });
+    return apiClient.get<Book[]>("/books/best-selling", { limit });
+  },
+
+  /**
+   * Get suggested books
+   */
+  async getSuggestedBooks(limit: number = 10): Promise<Book[]> {
+    return apiClient.get<Book[]>("/books/suggested", { limit });
+  },
+
+  /**
+   * Get books by popular categories
+   */
+  async getBooksByPopularCategories(limit: number = 3): Promise<CategoryWithBooks[]> {
+    return apiClient.get<CategoryWithBooks[]>("/books/by-popular-categories", { limit });
   },
 
   /**

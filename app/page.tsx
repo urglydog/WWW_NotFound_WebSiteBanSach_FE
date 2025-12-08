@@ -1,4 +1,4 @@
- "use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -10,6 +10,8 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { authService } from "@/lib/services/auth.service"
 import { usersService } from "@/lib/services/users.service"
+import { booksService, Book, CategoryWithBooks } from "@/lib/services/books.service"
+import { categoriesService, Category } from "@/lib/services/categories.service"
 import { message } from "antd"
 
 export default function Home() {
@@ -17,6 +19,30 @@ export default function Home() {
   const searchParams = useSearchParams()
   const { setUserState, user } = useAuth()
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
+  const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
+  const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
+  const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
+  const [literatureBooks, setLiteratureBooks] = useState<Book[]>([])
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const [bestSellers, suggested, categoriesWithBooks, literatureResponse] = await Promise.all([
+          booksService.getBestSellers(4),
+          booksService.getSuggestedBooks(4),
+          booksService.getBooksByPopularCategories(3),
+          booksService.getBooks({ category: "Văn học", pageSize: 4 })
+        ])
+        setBestSellingBooks(bestSellers)
+        setSuggestedBooks(suggested)
+        setPopularCategoriesWithBooks(categoriesWithBooks)
+        setLiteratureBooks(literatureResponse.content)
+      } catch (error) {
+        console.error("Failed to fetch books:", error)
+      }
+    }
+    fetchBooks()
+  }, [])
 
   useEffect(() => {
     // Tránh xử lý callback nhiều lần
@@ -93,7 +119,7 @@ export default function Home() {
             // Sử dụng usersService.getMyProfile() thay vì authService.getCurrentUser()
             // vì API /users/me trả về đầy đủ thông tin bao gồm avatarUrl
             const userInfo = await usersService.getMyProfile()
-            
+
             // Format user giống hệt như login bằng username
             // API trả về avatarUrl (từ Google) hoặc avatar (custom)
             const formattedUser = {
@@ -103,7 +129,7 @@ export default function Home() {
               role: (userInfo.role ?? "CUSTOMER").toUpperCase(),
               username: userInfo.username,
               phone: userInfo.phoneNumber || undefined, // Convert null to undefined
-              avatar: (userInfo as any).avatarUrl || userInfo.avatar, // Lấy avatarUrl nếu có (từ Google)
+              avatar: userInfo.avatarUrl || userInfo.avatar, // Lấy avatarUrl nếu có (từ Google)
               emailVerified: userInfo.emailVerified ?? false,
               createdAt: new Date().toISOString(),
             }
@@ -122,7 +148,7 @@ export default function Home() {
               const tokenParts = token.split(".")
               if (tokenParts.length === 3) {
                 const payload = JSON.parse(atob(tokenParts[1]))
-                
+
                 // Tạo user object từ JWT payload
                 const decodedUser = {
                   id: payload.sub || payload.userId || "",
@@ -172,26 +198,26 @@ export default function Home() {
       // Nếu có và user đã đăng nhập, có thể backend đã login thành công nhưng redirect sai
       const existingToken = localStorage.getItem("authToken")
       const existingUser = localStorage.getItem("user")
-      
+
       if (existingToken && existingUser && user) {
         // Không hiển thị lỗi nếu đã có token và user
         setHasProcessedCallback(true)
         router.replace("/")
         return
       }
-      
+
       // Hiển thị thông báo lỗi cho người dùng
       let errorMessage = "Đăng nhập Google thất bại. Vui lòng thử lại."
-      
+
       if (error === "google_login_failed") {
         errorMessage = "Không thể đăng nhập bằng Google. Backend đã xử lý nhưng không trả về token. Vui lòng kiểm tra backend hoặc đăng nhập bằng tên đăng nhập/mật khẩu."
       } else if (error === "google_invalid_code") {
         errorMessage = "Mã xác thực không hợp lệ. Vui lòng thử lại."
       }
-      
+
       // Đánh dấu đã xử lý callback trước khi hiển thị message
       setHasProcessedCallback(true)
-      
+
       // Hiển thị message với duration dài hơn để user có thể đọc
       // Sử dụng setTimeout để đảm bảo state đã được cập nhật
       setTimeout(() => {
@@ -200,7 +226,7 @@ export default function Home() {
           duration: 6,
         })
       }, 0)
-      
+
       // Delay một chút trước khi redirect để đảm bảo message được hiển thị
       setTimeout(() => {
         // Chuyển về trang chủ và xóa error khỏi URL
@@ -253,6 +279,7 @@ export default function Home() {
             description="Những cuốn sách được yêu thích nhất hiện tại"
             type="trending"
             limit={4}
+            books={bestSellingBooks}
           />
 
           <RecommendationSection
@@ -260,14 +287,16 @@ export default function Home() {
             description="Những sách được đánh giá cao nhất"
             type="recommendations"
             limit={4}
+            books={suggestedBooks}
           />
 
           <RecommendationSection
-            title="Sách văn học"
-            description="Khám phá những tác phẩm văn học hay nhất"
+            title="Khám phá"
+            description="Khám phá những tác phẩm hay nhất"
             type="category"
             categoryFilter="Văn học"
             limit={4}
+            books={literatureBooks}
           />
         </div>
 
@@ -282,21 +311,55 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-              {["Văn học", "Kinh tế", "Tâm lý học"].map((category, i) => (
-                <Link key={i} href={`/categories/${category.toLowerCase()}`}>
-                  <div className="group cursor-pointer">
-                    <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
-                      <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
-                        <span className="text-4xl sm:text-5xl">📖</span>
+              {popularCategoriesWithBooks.length > 0 ? (
+                popularCategoriesWithBooks.slice(0, 3).map((item) => (
+                  <Link key={item.category.id} href={`/categories/${item.category.id}`}>
+                    <div className="group cursor-pointer">
+                      <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
+                        <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
+                          {(() => {
+                            const bookImage = item.books && item.books.length > 0
+                              ? (item.books[0].mainImageUrl || (item.books[0].imageUrls && item.books[0].imageUrls[0]))
+                              : null;
+
+                            if (bookImage) {
+                              return <img src={bookImage} alt={item.category.name} className="h-full w-full object-cover" />;
+                            }
+
+                            if (item.category.image) {
+                              return <img src={item.category.image} alt={item.category.name} className="h-full w-full object-cover" />;
+                            }
+
+                            return <span className="text-4xl sm:text-5xl">📖</span>;
+                          })()}
+                        </div>
                       </div>
+                      <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
+                        {item.category.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground sm:text-base">
+                        {item.category.description || `Khám phá ${item.category.name}`}
+                      </p>
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
-                      {category}
-                    </h3>
-                    <p className="text-sm text-muted-foreground sm:text-base">Khám phá {category.toLowerCase()}</p>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                ["Văn học", "Kinh tế", "Tâm lý học"].map((category, i) => (
+                  <Link key={i} href={`/categories/${category.toLowerCase()}`}>
+                    <div className="group cursor-pointer">
+                      <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
+                        <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
+                          <span className="text-4xl sm:text-5xl">📖</span>
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
+                        {category}
+                      </h3>
+                      <p className="text-sm text-muted-foreground sm:text-base">Khám phá {category.toLowerCase()}</p>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </section>

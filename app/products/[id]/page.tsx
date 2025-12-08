@@ -7,9 +7,10 @@ import { mockBooks } from "@/lib/mock-data"
 import { Star, Heart, Share2, Truck, MapPin, Clock } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Book, booksService, Review, reviewsService, wishlistService, addressService, shipmentService } from "@/lib/services"
+import { Book, booksService, Review, reviewsService, wishlistService, addressService, shipmentService, promotionsService } from "@/lib/services"
 import type { Address } from "@/lib/services/address.service"
 import type { CalculateShippingResponse } from "@/lib/services/shipment.service"
+import type { Promotion } from "@/lib/services/promotions.service"
 import { AddressSelectModal } from "@/components/products/address-select-modal"
 
 export default function ProductDetailPage() {
@@ -31,6 +32,8 @@ export default function ProductDetailPage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [shippingInfo, setShippingInfo] = useState<CalculateShippingResponse | null>(null)
   const [shippingLoading, setShippingLoading] = useState(false)
+  const [activePromotions, setActivePromotions] = useState<Promotion[]>([])
+  const [showAllPromotions, setShowAllPromotions] = useState(false)
 
   useEffect(() => {
     // Check if user is logged in
@@ -51,6 +54,15 @@ export default function ProductDetailPage() {
         })
         .finally(() => {
           setReviewsLoading(false)
+        })
+
+      // Load active promotions
+      promotionsService.getActivePromotions()
+        .then(promotions => {
+          setActivePromotions(promotions)
+        })
+        .catch(error => {
+          console.error("Error loading promotions:", error)
         })
 
       // Check wishlist status only if user is logged in
@@ -292,15 +304,68 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div className="mb-6">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-3xl font-bold text-primary">{book.price.toLocaleString("vi-VN")}₫</span>
+                  <span className="text-3xl font-bold text-primary">{book.discountPrice.toLocaleString("vi-VN")}₫</span>
                   {book.price && (
                     <span className="text-lg text-muted-foreground line-through">
                       {book.price.toLocaleString("vi-VN")}₫
                     </span>
                   )}
                 </div>
-                {book.discountPrice && <p className="text-accent font-semibold mt-2">Tiết kiệm {book.discountPrice}%</p>}
+                {book.price && book.discountPrice < book.price && (
+                  <p className="text-accent font-semibold mt-2">
+                    Tiết kiệm {Math.round(((book.price - book.discountPrice) / book.price) * 100)}%
+                  </p>
+                )}
               </div>
+
+              {/* Promotion Section */}
+              {activePromotions.length > 0 && (
+                <div className="mb-6 p-4 rounded-lg border border-accent/30 bg-accent/5">
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-2">Khuyến mãi đặc biệt</h3>
+                      <div className="space-y-2">
+                        {(showAllPromotions ? activePromotions : activePromotions.slice(0, 2)).map((promo) => (
+                          <div key={promo.id} className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-accent mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {promo.name} - Giảm {promo.discount}%
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Sử dụng mã: <span className="font-mono font-semibold text-accent">{promo.code}</span>
+                              </p>
+                              {promo.description && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {promo.description}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Từ {new Date(promo.startDate).toLocaleDateString("vi-VN")} đến {new Date(promo.endDate).toLocaleDateString("vi-VN")}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {activePromotions.length > 2 && (
+                        <button
+                          onClick={() => setShowAllPromotions(!showAllPromotions)}
+                          className="text-xs text-primary hover:underline mt-3 font-medium"
+                        >
+                          {showAllPromotions ? "Thu gọn" : `Xem thêm ${activePromotions.length - 2} khuyến mãi`}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Stock Status */}
               <div className="mb-6">
