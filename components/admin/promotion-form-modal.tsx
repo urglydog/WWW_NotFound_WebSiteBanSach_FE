@@ -105,13 +105,22 @@ export function PromotionFormModal({
   }
 
   const handleSubmit = async () => {
-    if (!validateForm()) return
+    if (!validateForm()) {
+      console.log("Form validation failed")
+      return
+    }
+
+    console.log("Submitting form with data:", formData)
+    console.log("Form code value:", formData.code)
+    console.log("Form code type:", typeof formData.code)
+    console.log("Form code length:", formData.code?.length)
 
     setIsSubmitting(true)
     try {
       if (editingPromotion && onUpdate) {
         await onUpdate(formData)
       } else {
+        console.log("Calling onSubmit with:", formData)
         await onSubmit(formData)
       }
       // Only close modal on success
@@ -257,8 +266,8 @@ export function PromotionFormModal({
             Hủy
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting 
-              ? (editingPromotion ? "Đang cập nhật..." : "Đang thêm...") 
+            {isSubmitting
+              ? (editingPromotion ? "Đang cập nhật..." : "Đang thêm...")
               : (editingPromotion ? "Cập nhật" : "Thêm mới")
             }
           </Button>

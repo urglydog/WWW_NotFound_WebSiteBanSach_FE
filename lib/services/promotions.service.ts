@@ -135,31 +135,34 @@ export const promotionsService = {
    * Get paginated list of promotions (Admin only)
    */
   async getPromotions(filters?: PromotionFilters): Promise<PaginatedResponse<Promotion>> {
-    const response = await apiClient.get<BackendApiResponse<SpringPage<BackendPromotionResponse>>>(
+    // apiClient.get đã unwrap result rồi, nên response là SpringPage chứ không phải BackendApiResponse
+    const response = await apiClient.get<SpringPage<BackendPromotionResponse>>(
       "/promotions",
       filters
     )
-    return transformPage(response.result, transformPromotion)
+    return transformPage(response, transformPromotion)
   },
 
   /**
    * Get active promotions
    */
   async getActivePromotions(): Promise<Promotion[]> {
-    const response = await apiClient.get<BackendApiResponse<BackendPromotionResponse[]>>(
+    // apiClient.get đã unwrap result rồi
+    const response = await apiClient.get<BackendPromotionResponse[]>(
       "/promotions/active"
     )
-    return response.result.map(transformPromotion)
+    return response.map(transformPromotion)
   },
 
   /**
    * Get a single promotion by ID
    */
   async getPromotionById(id: string): Promise<Promotion> {
-    const response = await apiClient.get<BackendApiResponse<BackendPromotionResponse>>(
+    // apiClient.get đã unwrap result rồi
+    const response = await apiClient.get<BackendPromotionResponse>(
       `/promotions/${id}`
     )
-    return transformPromotion(response.result)
+    return transformPromotion(response)
   },
 
   /**
@@ -171,16 +174,17 @@ export const promotionsService = {
     discount: number
     message?: string
   }> {
-    const response = await apiClient.post<BackendApiResponse<any>>("/promotions/validate", {
+    // apiClient.post đã unwrap result rồi
+    const response = await apiClient.post<any>("/promotions/validate", {
       promotionCode: code,
       orderValue: orderTotal,
       bookIds: bookIds || [],
     })
     // Transform validation response
     return {
-      valid: response.result.isValid || false,
-      discount: response.result.discountAmount || 0,
-      message: response.result.message,
+      valid: response.isValid || false,
+      discount: response.discountAmount || 0,
+      message: response.message,
     }
   },
 
@@ -188,22 +192,25 @@ export const promotionsService = {
    * Create a new promotion (Admin only)
    */
   async createPromotion(data: CreatePromotionRequest): Promise<Promotion> {
-    const response = await apiClient.post<BackendApiResponse<BackendPromotionResponse>>(
+    // apiClient.post đã unwrap result rồi
+    console.log("Sending create promotion request:", JSON.stringify(data, null, 2))
+    const response = await apiClient.post<BackendPromotionResponse>(
       "/promotions",
       data
     )
-    return transformPromotion(response.result)
+    return transformPromotion(response)
   },
 
   /**
    * Update a promotion (Admin only)
    */
   async updatePromotion(id: string, data: UpdatePromotionRequest): Promise<Promotion> {
-    const response = await apiClient.put<BackendApiResponse<BackendPromotionResponse>>(
+    // apiClient.put đã unwrap result rồi
+    const response = await apiClient.put<BackendPromotionResponse>(
       `/promotions/${id}`,
       data
     )
-    return transformPromotion(response.result)
+    return transformPromotion(response)
   },
 
   /**
@@ -217,10 +224,11 @@ export const promotionsService = {
    * Update promotion status (Admin only)
    */
   async updatePromotionStatus(id: string, status: "ACTIVE" | "INACTIVE" | "EXPIRED"): Promise<Promotion> {
-    const response = await apiClient.patch<BackendApiResponse<BackendPromotionResponse>>(
+    // apiClient.patch đã unwrap result rồi
+    const response = await apiClient.patch<BackendPromotionResponse>(
       `/promotions/${id}/status?status=${status}`,
       {}
     )
-    return transformPromotion(response.result)
+    return transformPromotion(response)
   },
 }

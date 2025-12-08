@@ -152,6 +152,10 @@ class ApiClient {
   }
 
   async post<T>(endpoint: string, body?: any): Promise<T> {
+    if (body) {
+      console.log("POST request body (raw):", body)
+      console.log("POST request body (stringified):", JSON.stringify(body, null, 2))
+    }
     return this.request<T>(endpoint, {
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
