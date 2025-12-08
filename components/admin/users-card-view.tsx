@@ -5,44 +5,44 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import type { User } from "@/hooks/use-user-filters"
+import type { UserManagementResponse } from "@/lib/services/users.service"
 
 interface UsersCardViewProps {
-  users: User[]
+  users: UserManagementResponse[]
   onDelete: (id: string) => void
   onBan: (id: string) => void
   onUnban: (id: string) => void
-  onView?: (user: User) => void
+  onView?: (user: UserManagementResponse) => void
   className?: string
 }
 
-export function UsersCardView({ 
-  users, 
-  onDelete, 
-  onBan, 
-  onUnban, 
+export function UsersCardView({
+  users,
+  onDelete,
+  onBan,
+  onUnban,
   onView,
-  className 
+  className
 }: UsersCardViewProps) {
 
-  const handleDelete = (user: User) => {
+  const handleDelete = (user: UserManagementResponse) => {
     onDelete(user.id)
-    toast.success(`Đã xóa người dùng ${user.name}`)
+    toast.success(`Đã xóa người dùng ${user.fullName || user.username}`)
   }
 
-  const handleBan = (user: User) => {
+  const handleBan = (user: UserManagementResponse) => {
     onBan(user.id)
-    toast.success(`Đã cấm người dùng ${user.name}`)
+    toast.success(`Đã cấm người dùng ${user.fullName || user.username}`)
   }
 
-  const handleUnban = (user: User) => {
+  const handleUnban = (user: UserManagementResponse) => {
     onUnban(user.id)
-    toast.success(`Đã bỏ cấm người dùng ${user.name}`)
+    toast.success(`Đã bỏ cấm người dùng ${user.fullName || user.username}`)
   }
 
-  const getStatusBadge = (user: User) => {
+  const getStatusBadge = (user: UserManagementResponse) => {
     const status = user.status || "active"
-    
+
     switch (status) {
       case "banned":
         return <Badge variant="destructive" className="text-xs">Bị cấm</Badge>
@@ -53,7 +53,8 @@ export function UsersCardView({
     }
   }
 
-  const getUserInitials = (name: string) => {
+  const getUserInitials = (name: string | null) => {
+    if (!name) return '??'
     return name
       .split(' ')
       .map(n => n[0])
@@ -79,13 +80,13 @@ export function UsersCardView({
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <Avatar className="h-12 w-12 shrink-0">
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.avatarUrl} />
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                    {getUserInitials(user.name)}
+                    {getUserInitials(user.fullName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-foreground truncate">{user.name}</p>
+                  <p className="font-semibold text-foreground truncate">{user.fullName || user.username}</p>
                   <div className="flex items-center gap-2 mt-1">
                     {getStatusBadge(user)}
                   </div>
@@ -105,7 +106,7 @@ export function UsersCardView({
                     <Eye className="w-4 h-4" />
                   </Button>
                 )}
-                
+
                 {user.status === "banned" ? (
                   <Button
                     variant="ghost"
@@ -143,7 +144,7 @@ export function UsersCardView({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Bạn có chắc chắn muốn xóa người dùng "{user.name}"? 
+                        Bạn có chắc chắn muốn xóa người dùng "{user.fullName || user.username}"?
                         Hành động này không thể hoàn tác.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -160,17 +161,19 @@ export function UsersCardView({
                 </AlertDialog>
               </div>
             </div>
-            
+
             {/* Contact Info */}
             <div className="grid grid-cols-1 gap-2 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="w-4 h-4 shrink-0" />
                 <span className="truncate">{user.email}</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="w-4 h-4 shrink-0" />
-                <span>{user.phone}</span>
-              </div>
+              {user.phoneNumber && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="w-4 h-4 shrink-0" />
+                  <span>{user.phoneNumber}</span>
+                </div>
+              )}
             </div>
 
             {/* Stats Grid */}
@@ -180,7 +183,7 @@ export function UsersCardView({
                   <ShoppingBag className="w-3 h-3" />
                   <span>Đơn hàng</span>
                 </div>
-                <p className="font-semibold text-sm text-foreground">{user.orders}</p>
+                <p className="font-semibold text-sm text-foreground">{user.totalOrders}</p>
               </div>
               <div className="p-2 bg-muted/30 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">Tổng chi tiêu</p>
@@ -193,7 +196,9 @@ export function UsersCardView({
                   <Calendar className="w-3 h-3" />
                   <span>Tham gia</span>
                 </div>
-                <p className="font-semibold text-xs text-foreground">{user.joinDate}</p>
+                <p className="font-semibold text-xs text-foreground">
+                  {new Date(user.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                </p>
               </div>
             </div>
           </div>
