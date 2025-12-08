@@ -59,6 +59,7 @@ export default function PromotionsPage() {
     try {
       // Transform form data to match API format
       const promotionPayload: any = {
+        code: promotionData.code, // QUAN TRỌNG: Luôn thêm code khi tạo mới
         name: promotionData.name,
         description: promotionData.description || "",
         discount: promotionData.discount,
@@ -67,25 +68,25 @@ export default function PromotionsPage() {
         usageLimit: promotionData.usageLimit,
         applicableBookIds: promotionData.applicableBookIds || [],
       }
-      
-      // Include code when editing (to allow code updates)
-      if (editingPromotion && promotionData.code) {
-        promotionPayload.code = promotionData.code
-      }
-
-      console.log("Submitting promotion:", promotionPayload)
 
       if (editingPromotion) {
         await promotionActions.updatePromotion(editingPromotion.id, promotionPayload)
+        // Toast đã được hiện trong hook, chỉ cần đóng modal sau một chút để user thấy toast
+        setTimeout(() => {
+          setIsModalOpen(false)
+          setEditingPromotion(null)
+        }, 100)
       } else {
         await promotionActions.addPromotion(promotionPayload)
+        // Toast đã được hiện trong hook, chỉ cần đóng modal sau một chút để user thấy toast
+        setTimeout(() => {
+          setIsModalOpen(false)
+          setEditingPromotion(null)
+        }, 100)
       }
-      setIsModalOpen(false)
-      setEditingPromotion(null)
     } catch (error) {
-      // Error đã được handle trong hook, nhưng đảm bảo modal không đóng nếu có lỗi
+      // Error đã được handle trong hook, không đóng modal nếu có lỗi
       console.error("Error submitting promotion:", error)
-      // Modal sẽ không đóng nếu có lỗi (vì onClose chỉ được gọi trong finally của modal)
     }
   }
 
@@ -151,7 +152,7 @@ export default function PromotionsPage() {
               sortState={sortState}
               onSort={sortActions.handleSort}
             />
-            
+
             {/* Pagination */}
             {paginationState.totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-4 border-t border-border">

@@ -166,18 +166,49 @@ export function usePromotionFilters() {
   // Promotion actions
   const addPromotion = async (promotion: Omit<Promotion, "id" | "status" | "usageCount">) => {
     try {
-      const newPromotion = await promotionsService.createPromotion({
-        code: promotion.code,
-        name: promotion.name,
-        description: promotion.description,
+      console.log("addPromotion called with:", promotion)
+      console.log("promotion.code:", promotion.code)
+      console.log("promotion.code type:", typeof promotion.code)
+      
+      // Đảm bảo code không bị undefined hoặc empty
+      if (!promotion.code || !promotion.code.trim()) {
+        console.error("Code is missing or empty:", promotion.code)
+        throw new Error("Mã khuyến mãi là bắt buộc")
+      }
+      
+      // Đảm bảo name không bị undefined hoặc empty
+      if (!promotion.name || !promotion.name.trim()) {
+        throw new Error("Tên khuyến mãi là bắt buộc")
+      }
+      
+      // Đảm bảo tất cả required fields có giá trị
+      const requestData: any = {
+        code: promotion.code.trim().toUpperCase(),
+        name: promotion.name.trim(),
         discountPercent: promotion.discount,
         startDate: promotion.startDate,
         endDate: promotion.endDate,
         usageLimit: promotion.usageLimit,
-        applicableBookIds: promotion.applicableBookIds,
-      })
+      }
+      
+      // Chỉ thêm optional fields nếu có giá trị
+      if (promotion.description?.trim()) {
+        requestData.description = promotion.description.trim()
+      }
+      
+      if (promotion.applicableBookIds && promotion.applicableBookIds.length > 0) {
+        requestData.applicableBookIds = promotion.applicableBookIds
+      }
+      
+      console.log("Creating promotion with data:", requestData)
+      console.log("Code value:", requestData.code)
+      console.log("Code type:", typeof requestData.code)
+      console.log("Code length:", requestData.code?.length)
+      
+      const newPromotion = await promotionsService.createPromotion(requestData)
+      // Optimistic update: thêm vào state thay vì reload toàn bộ
+      setPromotions(prev => [newPromotion, ...prev])
       toast.success("Thêm khuyến mãi thành công!")
-      await loadPromotions()
       return newPromotion
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Không thể thêm khuyến mãi"
@@ -186,21 +217,22 @@ export function usePromotionFilters() {
     }
   }
 
-  const updatePromotion = async (id: string, updatedPromotion: Partial<Promotion>) => {
+  const updatePromotion = async (id: string, promotionData: Partial<Promotion>) => {
     try {
       const updateData: any = {}
-      if (updatedPromotion.name) updateData.name = updatedPromotion.name
-      if (updatedPromotion.code) updateData.code = updatedPromotion.code
-      if (updatedPromotion.description !== undefined) updateData.description = updatedPromotion.description
-      if (updatedPromotion.discount !== undefined) updateData.discountPercent = updatedPromotion.discount
-      if (updatedPromotion.startDate) updateData.startDate = updatedPromotion.startDate
-      if (updatedPromotion.endDate) updateData.endDate = updatedPromotion.endDate
-      if (updatedPromotion.usageLimit !== undefined) updateData.usageLimit = updatedPromotion.usageLimit
-      if (updatedPromotion.applicableBookIds) updateData.applicableBookIds = updatedPromotion.applicableBookIds
+      if (promotionData.name) updateData.name = promotionData.name
+      if (promotionData.code) updateData.code = promotionData.code
+      if (promotionData.description !== undefined) updateData.description = promotionData.description
+      if (promotionData.discount !== undefined) updateData.discountPercent = promotionData.discount
+      if (promotionData.startDate) updateData.startDate = promotionData.startDate
+      if (promotionData.endDate) updateData.endDate = promotionData.endDate
+      if (promotionData.usageLimit !== undefined) updateData.usageLimit = promotionData.usageLimit
+      if (promotionData.applicableBookIds) updateData.applicableBookIds = promotionData.applicableBookIds
 
-      await promotionsService.updatePromotion(id, updateData)
+      const updatedPromotion = await promotionsService.updatePromotion(id, updateData)
+      // Optimistic update: cập nhật item trong state thay vì reload toàn bộ
+      setPromotions(prev => prev.map(p => p.id === id ? updatedPromotion : p))
       toast.success("Cập nhật khuyến mãi thành công!")
-      await loadPromotions()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Không thể cập nhật khuyến mãi"
       toast.error(errorMessage)
@@ -211,8 +243,9 @@ export function usePromotionFilters() {
   const deletePromotion = async (id: string) => {
     try {
       await promotionsService.deletePromotion(id)
+      // Optimistic update: xóa item khỏi state thay vì reload toàn bộ
+      setPromotions(prev => prev.filter(p => p.id !== id))
       toast.success("Xóa khuyến mãi thành công!")
-      await loadPromotions()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Không thể xóa khuyến mãi"
       toast.error(errorMessage)
@@ -235,9 +268,10 @@ export function usePromotionFilters() {
       }
       
       const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE"
-      await promotionsService.updatePromotionStatus(id, newStatus)
+      const updatedPromotion = await promotionsService.updatePromotionStatus(id, newStatus)
+      // Optimistic update: cập nhật item trong state thay vì reload toàn bộ
+      setPromotions(prev => prev.map(p => p.id === id ? updatedPromotion : p))
       toast.success("Cập nhật trạng thái thành công!")
-      await loadPromotions()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Không thể cập nhật trạng thái"
       toast.error(errorMessage)
