@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartSidebar } from "@/components/cart/cart-sidebar";
+import { ChatbotFloatingButton } from "@/components/chatbot/chatbot-floating-button";
 import "./globals.css";
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -44,6 +45,7 @@ export default function RootLayout({
           <CartProvider>
             {children}
             <CartSidebar />
+            <ChatbotFloatingButton />
           </CartProvider>
         </AuthProvider>
         <Analytics />
