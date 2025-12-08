@@ -19,17 +19,22 @@ export default function Home() {
   const { setUserState, user } = useAuth()
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
   const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
+  const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
 
   useEffect(() => {
-    const fetchBestSellers = async () => {
+    const fetchBooks = async () => {
       try {
-        const data = await booksService.getBestSellers(4)
-        setBestSellingBooks(data)
+        const [bestSellers, suggested] = await Promise.all([
+          booksService.getBestSellers(4),
+          booksService.getSuggestedBooks(4)
+        ])
+        setBestSellingBooks(bestSellers)
+        setSuggestedBooks(suggested)
       } catch (error) {
-        console.error("Failed to fetch best sellers:", error)
+        console.error("Failed to fetch books:", error)
       }
     }
-    fetchBestSellers()
+    fetchBooks()
   }, [])
 
   useEffect(() => {
@@ -275,6 +280,7 @@ export default function Home() {
             description="Những sách được đánh giá cao nhất"
             type="recommendations"
             limit={4}
+            books={suggestedBooks}
           />
 
           <RecommendationSection

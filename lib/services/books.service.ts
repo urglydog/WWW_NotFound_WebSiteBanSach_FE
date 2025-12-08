@@ -117,6 +117,13 @@ export const booksService = {
   },
 
   /**
+   * Get suggested books
+   */
+  async getSuggestedBooks(limit: number = 10): Promise<Book[]> {
+    return apiClient.get<Book[]>("/books/suggested", { limit });
+  },
+
+  /**
    * Get new arrivals
    */
   async getNewArrivals(limit: number = 10): Promise<Book[]> {
