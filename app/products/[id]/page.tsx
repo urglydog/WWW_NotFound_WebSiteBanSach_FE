@@ -7,6 +7,7 @@ import { mockBooks } from "@/lib/mock-data"
 import { Star, Heart, Share2, Truck, MapPin, Clock } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { useCart } from "@/lib/cart-context"
 import { Book, booksService, Review, reviewsService, wishlistService, addressService, shipmentService, promotionsService } from "@/lib/services"
 import type { Address } from "@/lib/services/address.service"
 import type { CalculateShippingResponse } from "@/lib/services/shipment.service"
@@ -21,6 +22,7 @@ export default function ProductDetailPage() {
   const productIdValue = Array.isArray(params?.id) ? params?.id[0] : params?.id
   const productId = productIdValue?.toString().trim()
   const router = useRouter()
+  const { addToCart, loading: cartLoading } = useCart()
 
   const [book, setBook] = useState<Book | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -58,7 +60,7 @@ export default function ProductDetailPage() {
 
     if (productId) {
       booksService.getBookById(productId).then(setBook)
-      
+
       // Load reviews
       setReviewsLoading(true)
       reviewsService.getBookReviews(productId, { page: 0, pageSize: 5 })
@@ -103,7 +105,7 @@ export default function ProductDetailPage() {
           .catch(error => {
             console.error("Error checking wishlist:", error)
           })
-        
+
         // Load user address
         addressService.getUserAddresses()
           .then(addresses => {
@@ -149,21 +151,21 @@ export default function ProductDetailPage() {
     const today = new Date()
     const minDays = 2
     const maxDays = 3
-    
+
     const minDate = new Date(today)
     minDate.setDate(today.getDate() + minDays)
-    
+
     const maxDate = new Date(today)
     maxDate.setDate(today.getDate() + maxDays)
-    
+
     const formatDate = (date: Date) => {
-      return date.toLocaleDateString("vi-VN", { 
-        day: "2-digit", 
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
         month: "2-digit",
         weekday: "short"
       })
     }
-    
+
     return `${formatDate(minDate)} - ${formatDate(maxDate)}`
   }
 
@@ -269,10 +271,10 @@ export default function ProductDetailPage() {
             <div className="space-y-4">
               {/* Main Image */}
               <div className="relative aspect-2/3 items-center justify-center overflow-hidden rounded-lg bg-muted">
-                <img 
-                  src={book.imageUrls?.[selectedImageIndex] || "/placeholder.svg"} 
-                  alt={book.title} 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={book.imageUrls?.[selectedImageIndex] || "/placeholder.svg"}
+                  alt={book.title}
+                  className="w-full h-full object-cover"
                 />
               </div>
 
@@ -283,15 +285,14 @@ export default function ProductDetailPage() {
                     <button
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                        selectedImageIndex === index 
-                          ? "border-primary" 
-                          : "border-transparent hover:border-muted-foreground/20"
-                      }`}
+                      className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${selectedImageIndex === index
+                        ? "border-primary"
+                        : "border-transparent hover:border-muted-foreground/20"
+                        }`}
                     >
-                      <img 
-                        src={imageUrl} 
-                        alt={`${book.title} - ${index + 1}`} 
+                      <img
+                        src={imageUrl}
+                        alt={`${book.title} - ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -425,8 +426,13 @@ export default function ProductDetailPage() {
                       +
                     </button>
                   </div>
-                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:flex-1" disabled={!((book.stockQuantity ?? 0) > 0)}>
-                    {(book.stockQuantity ?? 0) > 0 ? "Thêm vào giỏ" : "Hết hàng"}
+                  <Button
+                    size="lg"
+                    className="w-full bg-primary hover:bg-primary/90 sm:flex-1"
+                    disabled={!((book.stockQuantity ?? 0) > 0) || cartLoading}
+                    onClick={() => book.id && addToCart(book.id, quantity)}
+                  >
+                    {cartLoading ? "Đang xử lý..." : (book.stockQuantity ?? 0) > 0 ? "Thêm vào giỏ" : "Hết hàng"}
                   </Button>
                 </div>
 
@@ -434,14 +440,13 @@ export default function ProductDetailPage() {
                   <button
                     onClick={handleWishlistToggle}
                     disabled={wishlistLoading}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-border py-3 transition hover:bg-muted ${
-                      isInWishlist ? "bg-muted text-primary" : ""
-                    }`}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-border py-3 transition hover:bg-muted ${isInWishlist ? "bg-muted text-primary" : ""
+                      }`}
                   >
                     <Heart size={18} fill={isInWishlist ? "currentColor" : "none"} />
                     {wishlistLoading ? "Đang xử lý..." : (isInWishlist ? "Đã lưu" : "Lưu sách")}
                   </button>
-                  <button 
+                  <button
                     onClick={handleShare}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-6 py-3 transition hover:bg-muted sm:flex-none"
                   >
@@ -473,7 +478,7 @@ export default function ProductDetailPage() {
                   <Truck size={18} className="text-primary" />
                   Thông tin giao hàng
                 </h3>
-                
+
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-3">
                     <MapPin size={16} className="text-muted-foreground mt-0.5 shrink-0" />
@@ -494,7 +499,7 @@ export default function ProductDetailPage() {
                       ) : (
                         <p className="text-foreground font-medium">TP. Hồ Chí Minh</p>
                       )}
-                      <button 
+                      <button
                         onClick={() => setIsAddressModalOpen(true)}
                         className="text-primary text-xs hover:underline mt-1"
                       >
@@ -596,7 +601,7 @@ export default function ProductDetailPage() {
           {/* Reviews Section */}
           <div className="mt-16 max-w-4xl">
             <h2 className="text-2xl font-bold text-foreground mb-6">Đánh giá sản phẩm</h2>
-            
+
             {reviewsLoading ? (
               <div className="flex justify-center py-8">
                 <p className="text-muted-foreground">Đang tải đánh giá...</p>
@@ -613,8 +618,8 @@ export default function ProductDetailPage() {
                       {/* User Avatar */}
                       <div className="shrink-0">
                         {review.userAvatar ? (
-                          <img 
-                            src={review.userAvatar} 
+                          <img
+                            src={review.userAvatar}
                             alt={review.userName}
                             className="w-12 h-12 rounded-full object-cover"
                           />
