@@ -127,16 +127,16 @@ class ApiClient {
     // Filter out undefined, null, and empty string values
     const cleanParams = params
       ? Object.fromEntries(
-          Object.entries(params).filter(
-            ([_, value]) => value !== undefined && value !== null && value !== "" && String(value) !== "undefined"
-          )
+        Object.entries(params).filter(
+          ([_, value]) => value !== undefined && value !== null && value !== "" && String(value) !== "undefined"
         )
+      )
       : undefined
-    
+
     const queryString = cleanParams && Object.keys(cleanParams).length > 0
       ? "?" + new URLSearchParams(
-          Object.entries(cleanParams).map(([key, value]) => [key, String(value)])
-        ).toString()
+        Object.entries(cleanParams).map(([key, value]) => [key, String(value)])
+      ).toString()
       : ""
     return this.request<T>(`${endpoint}${queryString}`, {
       method: "GET",
