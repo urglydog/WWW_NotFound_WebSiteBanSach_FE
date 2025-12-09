@@ -1,8 +1,10 @@
 "use client"
 
-import { mockBooks } from "@/lib/mock-data"
+
 import { ProductCard } from "@/components/products/product-card"
 import { Button } from "@/components/ui/button"
+import { Book } from "@/lib/services/books.service"
+import Link from "next/link"
 
 interface RecommendationSectionProps {
   title: string
@@ -10,6 +12,7 @@ interface RecommendationSectionProps {
   type: "trending" | "category" | "similar" | "recommendations"
   categoryFilter?: string
   limit?: number
+  books?: Book[]
 }
 
 export function RecommendationSection({
@@ -18,32 +21,13 @@ export function RecommendationSection({
   type,
   categoryFilter,
   limit = 4,
+  books,
 }: RecommendationSectionProps) {
-  const getRecommendations = () => {
-    let filtered = [...mockBooks]
-
-    switch (type) {
-      case "trending":
-        filtered.sort((a, b) => b.reviews - a.reviews)
-        break
-      case "category":
-        if (categoryFilter) {
-          filtered = filtered.filter((b) => b.category === categoryFilter)
-        }
-        break
-      case "similar":
-        if (categoryFilter) {
-          filtered = filtered.filter((b) => b.category === categoryFilter)
-        }
-        filtered.sort(() => Math.random() - 0.5)
-        break
-      case "recommendations":
-        filtered = filtered.filter((b) => b.rating >= 4.5)
-        filtered.sort((a, b) => b.rating - a.rating)
-        break
+  const getRecommendations = (): Book[] => {
+    if (books && books.length > 0) {
+      return books
     }
-
-    return filtered.slice(0, limit)
+    return []
   }
 
   const recommendations = getRecommendations()
@@ -58,9 +42,11 @@ export function RecommendationSection({
           {description && <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">{description}</p>}
         </div>
         <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:justify-end">
-          <Button variant="ghost" size="sm" className="w-full sm:w-auto">
-            Xem tất cả
-          </Button>
+          <Link href="/products">
+            <Button variant="ghost" size="sm" className="w-full sm:w-auto cursor-pointer">
+              Xem tất cả
+            </Button>
+          </Link>
         </div>
       </div>
 

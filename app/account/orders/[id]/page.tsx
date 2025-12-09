@@ -1,44 +1,68 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { useOrder } from "@/lib/order-context"
+import { ordersService, OrderResponse } from "@/lib/services/orders.service"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ChevronLeft, Printer, Download } from "lucide-react"
+import { ChevronLeft, Printer, Download, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
 const statusSteps = [
-  { key: "pending", label: "Chờ xác nhận" },
-  { key: "processing", label: "Đang chuẩn bị" },
-  { key: "shipped", label: "Đang giao" },
-  { key: "delivered", label: "Đã giao" },
+  { key: "PENDING", label: "Chờ xác nhận" },
+  { key: "CONFIRMED", label: "Đã xác nhận" },
+  { key: "PROCESSING", label: "Đang chuẩn bị" },
+  { key: "SHIPPED", label: "Đang giao" },
+  { key: "DELIVERED", label: "Đã giao" },
 ]
 
 export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const { user, isLoading } = useAuth()
-  const { getOrderById } = useOrder()
+  const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const [order, setOrder] = useState<OrderResponse | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const order = getOrderById(params.id)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login")
+      return
+    }
 
-  if (isLoading) {
+    if (user) {
+      fetchOrder()
+    }
+  }, [user, authLoading, router, params.id])
+
+  const fetchOrder = async () => {
+    try {
+      setLoading(true)
+      const data = await ordersService.getOrderById(params.id)
+      setOrder(data)
+    } catch (error) {
+      console.error("Failed to fetch order:", error)
+      toast.error("Không thể tải thông tin đơn hàng")
+      router.push("/account/orders")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (authLoading || loading) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Đang tải...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
         <Footer />
       </div>
     )
   }
 
-  if (!user || !order || order.userId !== user.id) {
-    router.push("/login")
-    return null
-  }
+  if (!user || !order) return null
 
   const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status)
 
@@ -57,8 +81,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">{order.id}</h1>
-                <p className="text-muted-foreground">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</p>
+                <h1 className="text-3xl font-bold text-foreground">Đơn hàng #{order.orderCode || order.id.substring(0, 8)}</h1>
+                <p className="text-muted-foreground">{new Date(order.orderDate).toLocaleDateString("vi-VN")}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -76,22 +100,20 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           {/* Status Timeline */}
           <div className="bg-card border border-border rounded-lg p-6 mb-8">
             <h2 className="font-bold text-foreground mb-6">Trạng thái đơn hàng</h2>
-            <div className="flex justify-between">
+            <div className="flex justify-between overflow-x-auto">
               {statusSteps.map((step, index) => (
-                <div key={step.key} className="flex flex-col items-center flex-1">
+                <div key={step.key} className="flex flex-col items-center flex-1 min-w-[80px]">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition ${
-                      index <= currentStepIndex
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition ${index <= currentStepIndex
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     {index + 1}
                   </div>
                   <p
-                    className={`text-xs text-center font-medium ${
-                      index <= currentStepIndex ? "text-foreground" : "text-muted-foreground"
-                    }`}
+                    className={`text-xs text-center font-medium ${index <= currentStepIndex ? "text-foreground" : "text-muted-foreground"
+                      }`}
                   >
                     {step.label}
                   </p>
@@ -110,12 +132,12 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               <div className="bg-card border border-border rounded-lg p-6 mb-8">
                 <h2 className="font-bold text-foreground mb-4">Địa chỉ giao hàng</h2>
                 <div className="space-y-2 text-muted-foreground">
-                  <p className="font-semibold text-foreground">{order.shippingAddress.fullName}</p>
-                  <p>{order.shippingAddress.address}</p>
+                  <p className="font-semibold text-foreground">{order.shippingAddress.recipientName}</p>
+                  <p>{order.shippingAddress.street}</p>
                   <p>
-                    {order.shippingAddress.ward}, {order.shippingAddress.district}, {order.shippingAddress.city}
+                    {order.shippingAddress.ward}, {order.shippingAddress.district}, {order.shippingAddress.province}
                   </p>
-                  <p>Điện thoại: {order.shippingAddress.phone}</p>
+                  <p>Điện thoại: {order.shippingAddress.phoneNumber}</p>
                 </div>
               </div>
 
@@ -129,13 +151,13 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                       className="flex justify-between items-center py-3 border-b border-border last:border-0"
                     >
                       <div className="flex-1">
-                        <p className="font-medium text-foreground">{item.book.title}</p>
-                        <p className="text-sm text-muted-foreground">{item.book.author}</p>
+                        <p className="font-medium text-foreground">{item.bookTitle}</p>
+                        <p className="text-sm text-muted-foreground">ISBN: {item.bookIsbn}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-foreground">{item.quantity}x</p>
                         <p className="text-primary font-semibold">
-                          {(item.price * item.quantity).toLocaleString("vi-VN")}₫
+                          {item.unitPrice.toLocaleString("vi-VN")}₫
                         </p>
                       </div>
                     </div>
@@ -144,25 +166,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               </div>
 
               {/* Tracking */}
-              {order.trackingNumber && (
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <h2 className="font-bold text-foreground mb-4">Theo dõi giao hàng</h2>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Mã vận đơn:</span>
-                      <span className="font-semibold text-foreground">{order.trackingNumber}</span>
-                    </div>
-                    {order.estimatedDelivery && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Dự kiến giao:</span>
-                        <span className="font-semibold text-foreground">
-                          {new Date(order.estimatedDelivery).toLocaleDateString("vi-VN")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Tracking number is not in OrderResponse yet, skipping */}
             </div>
 
             {/* Summary */}
@@ -188,11 +192,13 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                   <div className="p-3 bg-background rounded-lg">
                     <p className="text-xs text-muted-foreground">Trạng thái thanh toán</p>
                     <p className="font-semibold text-foreground">
-                      {order.paymentMethod === "cod" ? "Thanh toán khi nhận" : "Đã thanh toán"}
+                      {order.paymentMethod}
                     </p>
                   </div>
-                  {order.status === "delivered" && (
-                    <Button className="w-full bg-primary hover:bg-primary/90">Tìm sách khác</Button>
+                  {order.status === "DELIVERED" && (
+                    <Link href="/products" className="block">
+                      <Button className="w-full bg-primary hover:bg-primary/90">Tìm sách khác</Button>
+                    </Link>
                   )}
                 </div>
               </div>

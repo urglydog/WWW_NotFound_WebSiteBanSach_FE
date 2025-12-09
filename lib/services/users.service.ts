@@ -2,8 +2,8 @@
  * Users Service
  * Handles all user-related API calls for Admin User Management
  */
-
-import { apiClient, PaginatedResponse } from "../api-client"
+import { apiClient, PaginatedResponse } from "../api-client";
+import { Address } from "./address.service";
 
 // User Management Response từ Backend (UserManagementResponse.java)
 export interface UserManagementResponse {
@@ -44,43 +44,41 @@ export interface UserAddress {
   longitude?: number
 }
 
-// Legacy User interface - giữ để tương thích
 export interface User {
-  id: string
-  username: string
-  email: string
-  fullName?: string
-  phoneNumber?: string
-  avatar?: string
-  role: "user" | "admin"
-  status: "active" | "inactive" | "banned"
-  addresses?: Address[]
-  totalOrders?: number
-  totalSpent?: number
-  createdAt: string
-  updatedAt: string
-}
-
-export interface Address {
-  id: string
-  fullName: string
-  phoneNumber: string
-  address: string
-  city: string
-  district: string
-  ward: string
-  isDefault: boolean
+  id: string;
+  username: string;
+  email: string;
+  fullName?: string;
+  phoneNumber?: string | null;
+  avatar?: string;
+  avatarUrl?: string; // Google avatar URL
+  role: "user" | "admin" | "CUSTOMER" | "ADMIN";
+  status?: "active" | "inactive" | "banned";
+  emailVerified?: boolean;
+  addresses?: Address[];
+  totalOrders?: number;
+  totalSpent?: number;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  lastLogin?: string | null;
+  membershipTier?: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+  points?: number;
+  providerId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UpdateProfileRequest {
-  fullName?: string
-  phoneNumber?: string
-  avatar?: string
+  fullName?: string;
+  phoneNumber?: string;
+  avatar?: File;
+  gender?: string; // Male, Female, Other
+  dateOfBirth?: string; // yyyy-MM-dd
 }
 
 export interface ChangePasswordRequest {
-  currentPassword: string
-  newPassword: string
+  currentPassword: string;
+  newPassword: string;
 }
 
 // User Filter Request khớp với Backend
@@ -141,23 +139,44 @@ export const usersService = {
    * Get paginated list of users with filters (Admin only)
    * GET /api/admin/users
    */
-  async getUsers(filters?: UserFilters): Promise<PaginatedResponse<UserManagementResponse>> {
-    const params = new URLSearchParams()
+  async getUsers(
+    filters?: UserFilters
+  ): Promise<PaginatedResponse<UserManagementResponse>> {
+    const params = new URLSearchParams();
 
     if (filters) {
-      if (filters.search) params.append('search', filters.search)
-      if (filters.role) params.append('role', filters.role)
-      if (filters.status) params.append('status', filters.status)
-      if (filters.sortBy) params.append('sortBy', filters.sortBy)
-      if (filters.sortDirection) params.append('sortDirection', filters.sortDirection)
-      if (filters.page !== undefined) params.append('page', filters.page.toString())
-      if (filters.size !== undefined) params.append('size', filters.size.toString())
+      if (filters.search) params.append("search", filters.search);
+      if (filters.role) params.append("role", filters.role);
+      if (filters.status) params.append("status", filters.status);
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
+      if (filters.sortDirection)
+        params.append("sortDirection", filters.sortDirection);
+      if (filters.page !== undefined)
+        params.append("page", filters.page.toString());
+      if (filters.size !== undefined)
+        params.append("size", filters.size.toString());
     }
 
-    const queryString = params.toString()
-    const endpoint = queryString ? `/admin/users?${queryString}` : '/admin/users'
+    const queryString = params.toString();
+    const endpoint = queryString
+      ? `/admin/users?${queryString}`
+      : `/admin/users`;
 
-    return apiClient.get<PaginatedResponse<UserManagementResponse>>(endpoint)
+    return apiClient.get<PaginatedResponse<UserManagementResponse>>(endpoint);
+  },
+
+  //   /**
+  //    * Get a single user by ID (Admin only)
+  //    */
+  //   async getUserById(id: string): Promise<User> {
+  //     return apiClient.get<User>(`/users/${id}`);
+  //   },
+
+  /**
+   * Get current user profile
+   */
+  async getMyProfile(): Promise<User> {
+    return apiClient.get<User>("/users/me");
   },
 
   /**
@@ -168,12 +187,55 @@ export const usersService = {
     return apiClient.get<UserDetailResponse>(`/admin/users/${id}`)
   },
 
+  async updateProfile(data: UpdateProfileRequest): Promise<User> {
+    const formData = new FormData();
+    if (data.fullName) formData.append("fullName", data.fullName);
+    if (data.phoneNumber) formData.append("phoneNumber", data.phoneNumber);
+    if (data.gender) formData.append("gender", data.gender);
+    if (data.dateOfBirth) formData.append("dateOfBirth", data.dateOfBirth);
+    if (data.avatar) formData.append("avatar", data.avatar);
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+
+    // Use fetch directly for FormData to avoid Content-Type issues with axios/apiClient wrapper if any
+    // Assuming apiClient handles simple JSON. For FormData, it's safer to use fetch or configure apiClient to not set Content-Type
+    // But let's check apiClient implementation first? 
+    // Actually, looking at `uploadAvatar` implementation in this file (lines 270+), it uses native fetch.
+    // I should probably follow that pattern for consistency and safety with FormData.
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/user/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Do NOT set Content-Type header, browser sets it with boundary for FormData
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Title update failed (HTTP ${response.status})`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      throw new Error(error.message || 'Không thể cập nhật thông tin');
+    }
+  },
+
   /**
    * Delete user (Admin only)
    * DELETE /api/admin/users/{id}
    */
   async deleteUser(id: string): Promise<void> {
     return apiClient.delete<void>(`/admin/users/${id}`)
+  },
+
+  async changePassword(
+    data: ChangePasswordRequest
+  ): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>("/users/change-password", data);
   },
 
   /**
@@ -232,6 +294,10 @@ export const usersService = {
     return apiClient.post<UserManagementResponse>('/admin/users', userData)
   },
 
+  //   async updateUserStatus(id: string, status: User["status"]): Promise<User> {
+  //     return apiClient.patch<User>(`/users/${id}/status`, { status });
+  //   },
+
   /**
    * Upload avatar image (Admin only)
    * POST /api/admin/upload/avatar
@@ -262,6 +328,10 @@ export const usersService = {
     } catch (error: any) {
       throw new Error(error.message || 'Không thể upload avatar')
     }
+  },
+
+  async updateUserRole(id: string, role: User["role"]): Promise<User> {
+    return apiClient.patch<User>(`/users/${id}/role`, { role });
   },
 
   /**
@@ -301,4 +371,13 @@ export const usersService = {
       throw new Error(error.message || 'Không thể xuất dữ liệu người dùng')
     }
   },
-}
+
+  async getUserStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    newUsersThisMonth: number;
+    topSpenders: User[];
+  }> {
+    return apiClient.get("/users/stats");
+  },
+};

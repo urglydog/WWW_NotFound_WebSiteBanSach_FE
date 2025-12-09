@@ -5,6 +5,7 @@ export { PriceRangeSlider } from "./price-range-slider"
 export { CategoryTabs } from "./category-tabs"
 export { BooksTable } from "./books-table"
 export { StatisticsSidebar } from "./statistics-sidebar"
+export { BookFormDialog } from "./book-form-dialog"
 
 // Admin Components - Orders Management
 export { OrderSearchFilter } from "./order-search-filter"
