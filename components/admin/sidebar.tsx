@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { LayoutDashboard, BookOpen, ShoppingCart, Users, Settings, LogOut, BarChart3, Tag } from "lucide-react"
+import { LayoutDashboard, BookOpen, ShoppingCart, Users, Settings, LogOut, BarChart3, Newspaper, Tag } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import Image from "next/image";
@@ -21,7 +21,8 @@ export function AdminSidebar({ onLogout, onNavigate, className }: AdminSidebarPr
     { label: "Quản lý đơn hàng", href: "/admin/orders", icon: ShoppingCart },
     { label: "Quản lý khuyến mãi", href: "/admin/promotions", icon: Tag },
     { label: "Thống kê doanh thu", href: "/admin/revenue", icon: BarChart3 },
-    { label: "Người dùng", href: "/admin/users", icon: Users },
+    { label: "Quản lý người dùng", href: "/admin/users", icon: Users },
+    { label: "Quản lý tin tức", href: "/admin/news", icon: Newspaper },
     { label: "Cài đặt", href: "/admin/settings", icon: Settings },
   ]
 
