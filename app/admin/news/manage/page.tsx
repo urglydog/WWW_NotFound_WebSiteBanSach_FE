@@ -109,7 +109,7 @@ export default function NewsManagePage() {
       if (statusFilter !== 'ALL') params.append('status', statusFilter)
       if (tagFilter) params.append('tag', tagFilter)
 
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '3.26.33.103:8080/api'
       const response = await fetch(`${API_BASE_URL}/news/advanced-search?${params.toString()}`)
       const data = await response.json()
 
@@ -189,7 +189,7 @@ export default function NewsManagePage() {
     }
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '3.26.33.103:8080/api'
       const token = localStorage.getItem('authToken')
 
       if (!token) {
@@ -259,7 +259,7 @@ export default function NewsManagePage() {
     }
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '3.26.33.103:8080/api'
       const token = localStorage.getItem('authToken')
 
       if (!token) {

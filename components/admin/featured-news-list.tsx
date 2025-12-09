@@ -35,7 +35,7 @@ export function FeaturedNewsList({ totalFeatured }: FeaturedNewsListProps) {
 
   const fetchFeaturedNews = (page: number) => {
     setIsLoading(true)
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '3.26.33.103:8080/api'
     fetch(`${API_BASE_URL}/news?status=PUBLISHED&featured=true&page=${page}&size=${pageSize}&sort=views&order=desc`)
       .then(res => res.json())
       .then(data => {

@@ -20,7 +20,7 @@ export function LoginForm() {
   const redirectPath = searchParams.get("redirect")
   const googleOAuthUrl =
     process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL ??
-    "https://accounts.google.com/o/oauth2/v2/auth?client_id=890914555873-2fj89b3o9srebvjhu6a66hjehtljac8p.apps.googleusercontent.com&redirect_uri=http://localhost:8080/api/auth/google/callback&response_type=code&scope=openid%20email%20profile"
+    "https://accounts.google.com/o/oauth2/v2/auth?client_id=890914555873-2fj89b3o9srebvjhu6a66hjehtljac8p.apps.googleusercontent.com&redirect_uri=3.26.33.103:8080/api/auth/google/callback&response_type=code&scope=openid%20email%20profile"
 
   const resetError = () => {
     if (error) {

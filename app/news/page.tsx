@@ -311,7 +311,7 @@ export default function NewsPage() {
     const fetchNews = async () => {
       setIsLoading(true)
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "3.26.33.103:8080/api"
 
         // Build query params for advanced-search endpoint - matching admin
         const params = new URLSearchParams({

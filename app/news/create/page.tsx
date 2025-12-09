@@ -153,7 +153,7 @@ export default function CreateNewsPage() {
     setIsSubmitting(true)
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '3.26.33.103:8080/api'
 
       // Get token from localStorage
       const token = localStorage.getItem('authToken')

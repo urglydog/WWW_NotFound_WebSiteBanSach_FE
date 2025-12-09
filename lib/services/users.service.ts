@@ -204,7 +204,7 @@ export const usersService = {
     // I should probably follow that pattern for consistency and safety with FormData.
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/user/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "3.26.33.103:8080/api"}/user/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -313,7 +313,7 @@ export const usersService = {
     formData.append('image', file)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/admin/upload/avatar`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "3.26.33.103:8080/api"}/admin/upload/avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -346,7 +346,7 @@ export const usersService = {
     const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/admin/users/export`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "3.26.33.103:8080/api"}/admin/users/export`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
