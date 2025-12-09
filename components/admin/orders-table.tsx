@@ -8,6 +8,7 @@ import { OrderResponse } from "@/lib/services/orders.service"
 interface OrdersTableProps {
   orders: OrderResponse[]
   onOrderClick?: (orderId: string) => void
+  onApproveOrder?: (orderId: string) => void
   className?: string
 }
 
@@ -34,10 +35,16 @@ const statusLabels: Record<string, string> = {
 export function OrdersTable({
   orders,
   onOrderClick,
+  onApproveOrder,
   className
 }: OrdersTableProps) {
   const handleOrderClick = (orderId: string) => {
     onOrderClick?.(orderId)
+  }
+
+  const handleApproveClick = (e: React.MouseEvent, orderId: string) => {
+    e.stopPropagation() // Prevent row click
+    onApproveOrder?.(orderId)
   }
 
   return (
@@ -109,15 +116,27 @@ export function OrdersTable({
                     </Badge>
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleOrderClick(order.id)}
-                      className="text-xs"
-                    >
-                      <span className="hidden sm:inline">Xem chi tiết</span>
-                      <span className="inline sm:hidden">Chi tiết</span>
-                    </Button>
+                    <div className="flex justify-end items-center gap-2">
+                      {(order.status === 'PENDING' && order.paymentMethod === 'COD') && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => handleApproveClick(e, order.id)}
+                          className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          Duyệt đơn
+                        </Button>
+                      )}
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOrderClick(order.id)}
+                        className="text-xs"
+                      >
+                        <span className="hidden sm:inline">Xem chi tiết</span>
+                        <span className="inline sm:hidden">Chi tiết</span>
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

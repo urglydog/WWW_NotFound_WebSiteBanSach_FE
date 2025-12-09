@@ -32,18 +32,28 @@ import { QuickAuthorDialog } from "./quick-author-dialog"
 import { Plus } from "lucide-react"
 
 // Schema
+// Schema
 const bookFormSchema = z.object({
     title: z.string().min(1, "Vui lòng nhập tên sách"),
-    isbn: z.string().optional(),
-    price: z.coerce.number().min(0, "Giá phải lớn hơn hoặc bằng 0"),
+    isbn: z.string().min(1, "Vui lòng nhập mã ISBN"),
+    price: z.coerce.number().gt(0, "Giá bán phải lớn hơn 0"),
     discountPrice: z.coerce.number().min(0).optional(),
     importPrice: z.coerce.number().min(0).optional(),
     stockQuantity: z.coerce.number().int().min(0, "Số lượng tồn kho không hợp lệ"),
-    publishDate: z.string().optional(), // YYYY-MM-DD
+    publishDate: z.string().min(1, "Vui lòng chọn ngày xuất bản")
+        .refine((date) => new Date(date) <= new Date(), "Ngày xuất bản không được lớn hơn ngày hiện tại"),
     description: z.string().optional(),
     status: z.nativeEnum(BookStatus).default(BookStatus.AVAILABLE),
     categoryIds: z.array(z.string()).min(1, "Chọn ít nhất 1 thể loại"),
-    authorIds: z.array(z.string()).optional()
+    authorIds: z.array(z.string()).min(1, "Chọn ít nhất 1 tác giả")
+}).refine((data) => {
+    if (data.discountPrice && data.price) {
+        return data.discountPrice <= data.price
+    }
+    return true
+}, {
+    message: "Giá khuyến mãi không được lớn hơn giá bán gốc",
+    path: ["discountPrice"]
 })
 
 type BookFormValues = z.infer<typeof bookFormSchema>
@@ -128,6 +138,26 @@ export function BookForm({ book, onSubmit, onCancel }: BookFormProps) {
 
     const handleSubmit = async (values: BookFormValues) => {
         try {
+            // Validate Images for New Books
+            if (!book && selectedImages.length === 0) {
+                // Manually trigger error or toast? Since we don't have form field for images, 
+                // we'll use a simple alert/toast or form setError implies field.
+                // Let's use form.setError if possible, or just return.
+                // But looking at UI, images usage is outside 'form' fields definition? 
+                // It is just a file input.
+                // We'll throw an error to be caught or just alert.
+                // Since this is client side, let's use a Toast if available, otherwise native alert for now 
+                // or preventing submission.
+                // Note: The user prompt context doesn't show "toast" imported in book-form.tsx, 
+                // but checking context, parent pages utilize toast.
+                // I'll assume I can't easily add toast here without import.
+                // I will add a local error state or just alert.
+                // Actually, I can allow the submission to fail or use the 'setError' on a dummy field?
+                // Better: Check if valid.
+                alert("Vui lòng chọn ít nhất 1 hình ảnh minh họa cho sách!")
+                return
+            }
+
             setIsSubmitting(true)
             const submissionData = {
                 ...values,
@@ -187,7 +217,7 @@ export function BookForm({ book, onSubmit, onCancel }: BookFormProps) {
                         name="isbn"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>ISBN</FormLabel>
+                                <FormLabel>ISBN <span className="text-red-500">*</span></FormLabel>
                                 <FormControl>
                                     <Input placeholder="Mã ISBN" {...field} />
                                 </FormControl>
@@ -286,7 +316,7 @@ export function BookForm({ book, onSubmit, onCancel }: BookFormProps) {
                         name="authorIds"
                         render={({ field }) => (
                             <FormItem className="col-span-2 md:col-span-1">
-                                <FormLabel>Tác giả</FormLabel>
+                                <FormLabel>Tác giả <span className="text-red-500">*</span></FormLabel>
                                 <div className="flex gap-2">
                                     <FormControl>
                                         <MultiSelect
@@ -319,7 +349,7 @@ export function BookForm({ book, onSubmit, onCancel }: BookFormProps) {
                         name="status"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Trạng thái</FormLabel>
+                                <FormLabel>Trạng thái <span className="text-red-500">*</span></FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
@@ -342,7 +372,7 @@ export function BookForm({ book, onSubmit, onCancel }: BookFormProps) {
                         name="publishDate"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Ngày xuất bản</FormLabel>
+                                <FormLabel>Ngày xuất bản <span className="text-red-500">*</span></FormLabel>
                                 <FormControl>
                                     <Input type="date" {...field} />
                                 </FormControl>

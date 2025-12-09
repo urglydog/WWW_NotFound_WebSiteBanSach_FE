@@ -54,6 +54,18 @@ export default function AdminOrdersPage() {
   const handleOrderClick = (orderId: string) => {
     // Developer D: Implement order detail view logic
     console.log('Order detail:', orderId)
+    // TODO: Navigate to detail
+  }
+
+  const handleApproveOrder = async (orderId: string) => {
+    try {
+      await ordersService.updateOrderStatus(orderId, "PROCESSING")
+      toast.success("Đã duyệt đơn hàng thành công")
+      fetchOrders() // Refresh list
+    } catch (error) {
+      console.error("Failed to approve order:", error)
+      toast.error("Không thể duyệt đơn hàng")
+    }
   }
 
   if (loading) {
@@ -88,6 +100,7 @@ export default function AdminOrdersPage() {
         <OrdersTable
           orders={filteredOrders}
           onOrderClick={handleOrderClick}
+          onApproveOrder={handleApproveOrder}
         />
 
       </div>
