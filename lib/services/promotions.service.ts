@@ -87,19 +87,19 @@ function transformPromotion(backend: BackendPromotionResponse): Promotion {
   startDate.setHours(0, 0, 0, 0)
   const endDate = new Date(backend.endDate)
   endDate.setHours(0, 0, 0, 0)
-  
+
   let status = backend.status
-  
+
   // Nếu startDate > today, tự động set INACTIVE (chưa đến ngày áp dụng)
   if (startDate > today && status === "ACTIVE") {
     status = "INACTIVE"
   }
-  
+
   // Nếu endDate < today, tự động set EXPIRED
   if (endDate < today && status !== "EXPIRED") {
     status = "EXPIRED"
   }
-  
+
   return {
     id: backend.promotionID,
     code: backend.code,
@@ -176,7 +176,7 @@ export const promotionsService = {
   }> {
     // apiClient.post đã unwrap result rồi
     const response = await apiClient.post<any>("/promotions/validate", {
-      promotionCode: code,
+      code: code,
       orderValue: orderTotal,
       bookIds: bookIds || [],
     })

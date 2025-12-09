@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { Trash2, Plus, Minus, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 export default function CartPage() {
   const {
@@ -19,6 +21,8 @@ export default function CartPage() {
     toggleItemSelection,
     selectAll
   } = useCart()
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
   const items = cart?.items || []
 
@@ -194,11 +198,20 @@ export default function CartPage() {
                   <span className="text-lg font-bold text-primary">{total.toLocaleString("vi-VN")}₫</span>
                 </div>
 
-                <Link href={selectedItems.length > 0 ? "/checkout" : "#"} className="block" onClick={(e) => selectedItems.length === 0 && e.preventDefault()}>
-                  <Button className="mb-2 w-full bg-primary hover:bg-primary/90" disabled={loading || selectedItems.length === 0}>
-                    Thanh toán ({selectedItems.length})
-                  </Button>
-                </Link>
+                <Button
+                  className="mb-2 w-full bg-primary hover:bg-primary/90"
+                  disabled={loading || selectedItems.length === 0}
+                  onClick={() => {
+                    if (selectedItems.length === 0) return
+                    if (!isAuthenticated) {
+                      router.push("/login?redirect=/checkout")
+                    } else {
+                      router.push("/checkout")
+                    }
+                  }}
+                >
+                  Thanh toán ({selectedItems.length})
+                </Button>
                 <Link href="/products">
                   <Button variant="outline" className="w-full bg-transparent">
                     Tiếp tục mua sắm
