@@ -72,7 +72,7 @@ export const reviewsService = {
    * Create a new review
    */
   async createReview(data: CreateReviewRequest): Promise<Review> {
-    return apiClient.post<Review>("/reviews", data)
+    return apiClient.post<Review>("/review/book/add", data)
   },
 
   /**
