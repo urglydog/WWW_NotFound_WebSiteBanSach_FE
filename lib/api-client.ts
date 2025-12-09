@@ -6,6 +6,11 @@
 // Get API URL from environment variables
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 
+// Log API URL in development to help debug
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  console.log("API Base URL:", API_BASE_URL)
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
