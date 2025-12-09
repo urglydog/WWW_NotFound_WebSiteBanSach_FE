@@ -12,6 +12,8 @@ export interface AddressResponse {
     longitude: number
 }
 
+export type Address = AddressResponse;
+
 export interface CreateAddressRequest {
     recipientName: string
     phoneNumber: string

@@ -71,7 +71,9 @@ export interface User {
 export interface UpdateProfileRequest {
   fullName?: string;
   phoneNumber?: string;
-  avatar?: string;
+  avatar?: File;
+  gender?: string; // Male, Female, Other
+  dateOfBirth?: string; // yyyy-MM-dd
 }
 
 export interface ChangePasswordRequest {
@@ -163,12 +165,12 @@ export const usersService = {
     return apiClient.get<PaginatedResponse<UserManagementResponse>>(endpoint);
   },
 
-//   /**
-//    * Get a single user by ID (Admin only)
-//    */
-//   async getUserById(id: string): Promise<User> {
-//     return apiClient.get<User>(`/users/${id}`);
-//   },
+  //   /**
+  //    * Get a single user by ID (Admin only)
+  //    */
+  //   async getUserById(id: string): Promise<User> {
+  //     return apiClient.get<User>(`/users/${id}`);
+  //   },
 
   /**
    * Get current user profile
@@ -184,9 +186,42 @@ export const usersService = {
   async getUserById(id: string): Promise<UserDetailResponse> {
     return apiClient.get<UserDetailResponse>(`/admin/users/${id}`)
   },
-  
+
   async updateProfile(data: UpdateProfileRequest): Promise<User> {
-    return apiClient.put<User>("/users/me", data);
+    const formData = new FormData();
+    if (data.fullName) formData.append("fullName", data.fullName);
+    if (data.phoneNumber) formData.append("phoneNumber", data.phoneNumber);
+    if (data.gender) formData.append("gender", data.gender);
+    if (data.dateOfBirth) formData.append("dateOfBirth", data.dateOfBirth);
+    if (data.avatar) formData.append("avatar", data.avatar);
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+
+    // Use fetch directly for FormData to avoid Content-Type issues with axios/apiClient wrapper if any
+    // Assuming apiClient handles simple JSON. For FormData, it's safer to use fetch or configure apiClient to not set Content-Type
+    // But let's check apiClient implementation first? 
+    // Actually, looking at `uploadAvatar` implementation in this file (lines 270+), it uses native fetch.
+    // I should probably follow that pattern for consistency and safety with FormData.
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Do NOT set Content-Type header, browser sets it with boundary for FormData
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Title update failed (HTTP ${response.status})`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      throw new Error(error.message || 'Không thể cập nhật thông tin');
+    }
   },
 
   /**
@@ -196,7 +231,7 @@ export const usersService = {
   async deleteUser(id: string): Promise<void> {
     return apiClient.delete<void>(`/admin/users/${id}`)
   },
-  
+
   async changePassword(
     data: ChangePasswordRequest
   ): Promise<{ message: string }> {
@@ -258,10 +293,10 @@ export const usersService = {
   async createUser(userData: CreateUserRequest): Promise<UserManagementResponse> {
     return apiClient.post<UserManagementResponse>('/admin/users', userData)
   },
-  
-//   async updateUserStatus(id: string, status: User["status"]): Promise<User> {
-//     return apiClient.patch<User>(`/users/${id}/status`, { status });
-//   },
+
+  //   async updateUserStatus(id: string, status: User["status"]): Promise<User> {
+  //     return apiClient.patch<User>(`/users/${id}/status`, { status });
+  //   },
 
   /**
    * Upload avatar image (Admin only)
@@ -294,7 +329,7 @@ export const usersService = {
       throw new Error(error.message || 'Không thể upload avatar')
     }
   },
-  
+
   async updateUserRole(id: string, role: User["role"]): Promise<User> {
     return apiClient.patch<User>(`/users/${id}/role`, { role });
   },
@@ -336,7 +371,7 @@ export const usersService = {
       throw new Error(error.message || 'Không thể xuất dữ liệu người dùng')
     }
   },
-  
+
   async getUserStats(): Promise<{
     totalUsers: number;
     activeUsers: number;
