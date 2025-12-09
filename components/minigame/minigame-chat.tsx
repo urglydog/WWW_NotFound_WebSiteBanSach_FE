@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Gift, Sparkles, X } from "lucide-react"
 
 import { SpinWheel, type WheelSegment } from "@/components/minigame/spin-wheel"
@@ -19,6 +20,14 @@ const truncateWords = (text: string, maxWords = 3) => {
   return parts.slice(0, maxWords).join(" ")
 }
 
+const fallbackSegments: WheelSegment[] = [
+  { label: "Giảm 5%", value: "Giảm 5% đơn hàng", code: "WELCOME5", color: "#E85D4C", textColor: "#fff" },
+  { label: "Giảm 20%", value: "Giảm 20% cho sách mới", code: "SACHMOI20", color: "#4CAF50", textColor: "#fff" },
+  { label: "Giảm 15%", value: "Giảm 15% đơn hàng", code: "GIANGSINH15", color: "#2196F3", textColor: "#fff" },
+  { label: "Giảm 50%", value: "Giảm 50% đơn hàng", code: "DTVV2025", color: "#9C27B0", textColor: "#fff" },
+  { label: "Miễn ship", value: "Miễn phí vận chuyển", code: "FREESHIP", color: "#FFC107", textColor: "#333" },
+]
+
 interface Prize {
   label: string
   value: string
@@ -35,6 +44,7 @@ interface Voucher {
 
 export function MiniGameChat() {
   const { user, isAuthenticated } = useAuth()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -47,10 +57,28 @@ export function MiniGameChat() {
   const localKey = user ? `minigame_spins_${user.id}` : null
   const firstLoginKey = user ? `minigame_seen_${user.id}` : null
 
+  // Luôn mở modal khi load trang (F5)
+  useEffect(() => {
+    setIsOpen(true)
+  }, [])
+
   useEffect(() => {
     const loadPromotions = async () => {
       setLoadingPromos(true)
       try {
+        if (!isAuthenticated) {
+          // Hiển thị dữ liệu mẫu cho khách vãng lai
+          const loseSegments: WheelSegment[] = [
+            { label: "Chúc may mắn", value: "Chúc bạn may mắn lần sau", isLose: true, color: "#94a3b8", textColor: "#fff" },
+            { label: "Hẹn gặp lại", value: "Hẹn gặp lại ở lượt quay sau", isLose: true, color: "#cbd5e1", textColor: "#111" },
+            { label: "Lần sau nhé", value: "Thử vận may lần sau", isLose: true, color: "#a3a3a3", textColor: "#fff" },
+            { label: "Gần trúng!", value: "Bạn suýt trúng rồi!", isLose: true, color: "#d4d4d8", textColor: "#111" },
+            { label: "Tiếc quá", value: "Tiếc quá, hãy quay tiếp", isLose: true, color: "#9ca3af", textColor: "#fff" },
+          ]
+          setSegments([...fallbackSegments.slice(0, 5), ...loseSegments].slice(0, 10))
+          return
+        }
+
         const res = await promotionsService.getPromotions({ page: 0, size: 10 })
         const content = (res as any)?.data || (res as any)?.content || []
         const palette = ["#E85D4C", "#4CAF50", "#FF9800", "#2196F3", "#9C27B0", "#F44336", "#00BCD4", "#FFC107"]
@@ -72,13 +100,22 @@ export function MiniGameChat() {
         setSegments([...mapped, ...loseSegments].slice(0, 10))
       } catch (error) {
         console.error("Không thể tải khuyến mãi:", error)
+        // Fallback dữ liệu mẫu nếu lỗi
+        const loseSegments: WheelSegment[] = [
+          { label: "Chúc may mắn", value: "Chúc bạn may mắn lần sau", isLose: true, color: "#94a3b8", textColor: "#fff" },
+          { label: "Hẹn gặp lại", value: "Hẹn gặp lại ở lượt quay sau", isLose: true, color: "#cbd5e1", textColor: "#111" },
+          { label: "Lần sau nhé", value: "Thử vận may lần sau", isLose: true, color: "#a3a3a3", textColor: "#fff" },
+          { label: "Gần trúng!", value: "Bạn suýt trúng rồi!", isLose: true, color: "#d4d4d8", textColor: "#111" },
+          { label: "Tiếc quá", value: "Tiếc quá, hãy quay tiếp", isLose: true, color: "#9ca3af", textColor: "#fff" },
+        ]
+        setSegments([...fallbackSegments.slice(0, 5), ...loseSegments].slice(0, 10))
       } finally {
         setLoadingPromos(false)
       }
     }
 
     loadPromotions()
-  }, [])
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -108,7 +145,7 @@ export function MiniGameChat() {
     setSpinsRemaining(initial.remaining)
   }, [user?.id, localKey])
 
-  // Auto open modal on first login per user
+  // Auto open modal on first login per user (still keep tracking)
   useEffect(() => {
     if (typeof window === "undefined") return
     if (!user || !isAuthenticated || !firstLoginKey) return
@@ -126,19 +163,24 @@ export function MiniGameChat() {
     localStorage.setItem(localKey, JSON.stringify({ date: today, remaining: next }))
   }
 
+  const handleLoginRedirect = () => {
+    setIsOpen(false)
+    router.push("/login")
+  }
+
   const handleSpinComplete = (prize: Prize) => {
     setCurrentPrize(prize)
     setShowModal(true)
 
     if (!prize.isLose) {
       setShowConfetti(true)
-      const newVoucher = {
+    const newVoucher = {
         code: prize.code || `BOOK${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        label: prize.label,
-        value: prize.value,
-        date: new Date().toLocaleDateString("vi-VN"),
-      }
-      setVouchers((prev) => [newVoucher, ...prev])
+      label: prize.label,
+      value: prize.value,
+      date: new Date().toLocaleDateString("vi-VN"),
+    }
+    setVouchers((prev) => [newVoucher, ...prev])
     } else {
       setShowConfetti(false)
     }
@@ -170,34 +212,34 @@ export function MiniGameChat() {
             />
             <div className="relative z-10 w-full max-w-5xl rounded-2xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-90">
               <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/60 rounded-t-2xl">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Mini game</p>
-                    <p className="text-xs text-muted-foreground">Quay để nhận voucher</p>
-                  </div>
+              <div className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Mini game</p>
+                  <p className="text-xs text-muted-foreground">Quay để nhận voucher</p>
                 </div>
-                <button
-                  aria-label="Đóng mini game"
-                  className="p-1 rounded-full hover:bg-muted text-muted-foreground"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </button>
               </div>
+              <button
+                aria-label="Đóng mini game"
+                className="p-1 rounded-full hover:bg-muted text-muted-foreground"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
               <div className="px-6 py-5 space-y-5">
                 <div className="flex flex-col gap-2 text-xs text-muted-foreground bg-muted rounded-lg px-4 py-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span>Sự kiện Vòng quay may mắn</span>
+                </div>
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span>Sự kiện Vòng quay may mắn</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>
+                <span>
                       Lượt hôm nay: <span className="font-semibold text-foreground">{spinsRemaining}</span>
-                    </span>
+                </span>
                     {!isAuthenticated && <span className="text-[11px] text-destructive">Đăng nhập để nhận 3 lượt/ngày</span>}
-                  </div>
+              </div>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
@@ -206,25 +248,27 @@ export function MiniGameChat() {
                       <SpinWheel
                         onSpinComplete={handleSpinComplete}
                         segments={segments}
-                        disabled={!isAuthenticated || spinsRemaining <= 0}
+                      disabled={isAuthenticated ? spinsRemaining <= 0 : false}
                         spinsRemaining={spinsRemaining}
+                      unauthenticated={!isAuthenticated}
+                      onLoginRedirect={handleLoginRedirect}
                       />
-                    </div>
-                  </div>
+                </div>
+              </div>
 
                   <div className="flex flex-col gap-4">
                     <div className="space-y-3">
                       <h3 className="text-sm font-semibold text-foreground">Voucher của bạn</h3>
                       <VoucherHistory vouchers={vouchers.slice(0, 5)} />
                     </div>
-                    <Separator />
+              <Separator />
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Button
+                <Button
                         className="w-full bg-primary text-primary-foreground sm:col-span-2"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Đóng
-                      </Button>
+                  onClick={() => setIsOpen(false)}
+                >
+                  Đóng
+                </Button>
                     </div>
                   </div>
                 </div>
