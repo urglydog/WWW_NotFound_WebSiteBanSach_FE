@@ -1,7 +1,7 @@
 "use client"
 
 import { useRevenueData } from "@/hooks/use-revenue-data"
-import { 
+import {
   RevenuePageHeader,
   RevenueSummaryCards,
   RevenueChart,
@@ -9,11 +9,12 @@ import {
   CategoryPerformanceTable,
   WeeklyRevenueChart
 } from "@/components/admin"
+import { RevenueChatbot } from "@/components/admin/revenue-chatbot"
 
 
 
 export default function AdminRevenuePage() {
-  const { 
+  const {
     revenueByMonth,
     revenueStreams,
     categoryPerformance,
@@ -50,8 +51,8 @@ export default function AdminRevenuePage() {
   return (
     <div className="min-h-screen bg-muted/40">
       <div className="space-y-6 sm:space-y-8 px-4 py-6 sm:p-6 lg:p-8">
-        
-        <RevenuePageHeader 
+
+        <RevenuePageHeader
           dateRange={dateRange}
           onDateRangeChange={handleDateRangeChange}
           onExport={handleExport}
@@ -62,27 +63,30 @@ export default function AdminRevenuePage() {
         <RevenueSummaryCards summaryCards={summaryCards} />
 
         <section className="grid grid-cols-1 2xl:grid-cols-3 gap-6 sm:gap-8">
-          <RevenueChart 
+          <RevenueChart
             data={revenueByMonth}
             className="2xl:col-span-2"
           />
-          
-          <RevenueChannelsChart 
+
+          <RevenueChannelsChart
             data={revenueStreams}
             colors={chartColors}
           />
         </section>
 
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
-          <CategoryPerformanceTable 
+          <CategoryPerformanceTable
             data={categoryPerformance}
             className="xl:col-span-2"
           />
-          
+
           <WeeklyRevenueChart data={weeklySnapshot} />
         </section>
 
       </div>
+
+      {/* AI Revenue Chatbot - Proactive Assistant */}
+      <RevenueChatbot />
     </div>
   )
 }
