@@ -99,7 +99,133 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@media print {
+  @page {
+    margin: 2cm;
+    size: auto;
+  }
+
+  /* Hide non-printable elements */
+  header,
+  footer,
+  aside,
+  button,
+  .no-print,
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Reset layout for print */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Ensure containers are full width */
+  .container,
+  .max-w-4xl,
+  .max-w-7xl {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Improve table/grid readability */
+  .grid {
+    display: block !important;
+  }
+
+  .col-span-1,
+  .col-span-2,
+  .col-span-3,
+  .lg\:col-span-1,
+  .lg\:col-span-2,
+  .lg\:col-span-3 {
+    width: 100% !important;
+    margin-bottom: 2rem;
+  }
+
+  /* Borders for definition */
+  .border,
+  .border-b {
+    border-color: #000 !important;
+  }
+
+  /* Typography overrides */
+  h1 {
+    font-size: 24pt !important;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 18pt !important;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid black;
+    padding-bottom: 0.25rem;
+  }
+
+  p {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Ensure card backgrounds don't interfere */
+  .bg-card,
+  .bg-muted,
+  .bg-muted\/50 {
+    background: none !important;
+    border: none !important;
+  }
+
+  /* Show print-only elements if any */
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* Fallback colors for PDF generation to avoid html2canvas oklch/lab errors */
+body.safe-colors,
+.safe-colors {
+  --background: #ffffff !important;
+  --foreground: #000000 !important;
+  --card: #ffffff !important;
+  --card-foreground: #000000 !important;
+  --popover: #ffffff !important;
+  --popover-foreground: #000000 !important;
+  --primary: #000000 !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #f0f0f0 !important;
+  --secondary-foreground: #000000 !important;
+  --muted: #f5f5f5 !important;
+  --muted-foreground: #666666 !important;
+  --accent: #f0f0f0 !important;
+  --accent-foreground: #000000 !important;
+  --destructive: #ff0000 !important;
+  --destructive-foreground: #ffffff !important;
+  --border: #e0e0e0 !important;
+  --input: #e0e0e0 !important;
+  --ring: #000000 !important;
+
+  /* Force simple colors */
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Ensure all children inherit safe colors for borders/backgrounds where variables are used */
+body.safe-colors *,
+.safe-colors * {
+  border-color: #000000 !important;
 }

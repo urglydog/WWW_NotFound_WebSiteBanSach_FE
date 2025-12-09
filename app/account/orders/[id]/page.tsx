@@ -119,6 +119,153 @@ export default function OrderDetailPage({
     }
   };
 
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const handleDownload = async () => {
+    try {
+      const html2canvas = (await import("html2canvas")).default
+      const { jsPDF } = await import("jspdf")
+
+      // Create an iframe to isolate the print content from Tailwind's global styles
+      const iframe = document.createElement("iframe")
+      iframe.style.position = "fixed"
+      iframe.style.left = "-10000px"
+      iframe.style.top = "0"
+      iframe.style.width = "210mm" // A4 width
+      iframe.style.minHeight = "297mm" // A4 height
+      iframe.style.border = "none"
+      document.body.appendChild(iframe)
+
+      const doc = iframe.contentWindow?.document
+      if (!doc) {
+        document.body.removeChild(iframe)
+        return
+      }
+
+      // Write pure HTML/CSS content into the iframe
+      // No external stylesheets are included, so no Tailwind interference
+      doc.open()
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              background: #ffffff; 
+              color: #000000; 
+              margin: 20px;
+              padding: 20px;
+            }
+            .header { border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
+            .section { margin-bottom: 30px; }
+            .section-title { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; }
+            th { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; background-color: #f5f5f5; font-weight: bold; }
+            td { padding: 10px; border-bottom: 1px solid #eee; }
+            .text-right { text-align: right; }
+            .total-row { border-top: 2px solid #000; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; }
+            .summary { float: right; width: 300px; }
+            .clear { clear: both; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">Đơn hàng #${order?.orderCode || order?.id}</h1>
+            <p style="margin: 5px 0 0 0; color: #666;">Ngày đặt: ${new Date(order?.orderDate || "").toLocaleDateString("vi-VN")}</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Địa chỉ giao hàng</div>
+            <p style="margin: 5px 0;"><strong>${order?.recipientName}</strong></p>
+            <p style="margin: 5px 0;">${order?.shippingAddress}</p>
+            <p style="margin: 5px 0;">SĐT: ${order?.recipientPhone}</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Chi tiết đơn hàng</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th class="text-right">Số lượng</th>
+                  <th class="text-right">Đơn giá</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order?.items.map(item => `
+                  <tr>
+                    <td>
+                      <div style="font-weight: bold;">${item.bookTitle}</div>
+                      <div style="font-size: 12px; color: #666;">ISBN: ${item.bookIsbn}</div>
+                    </td>
+                    <td class="text-right">${item.quantity}</td>
+                    <td class="text-right">${item.unitPrice.toLocaleString("vi-VN")}₫</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <div class="summary">
+               <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>Tạm tính:</span>
+                <span style="font-weight: bold;">${order?.subtotal.toLocaleString("vi-VN")}₫</span>
+              </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                 <span>Vận chuyển:</span>
+                 <span>${order?.shippingFee === 0 ? "Miễn phí" : `${order?.shippingFee.toLocaleString("vi-VN")}₫`}</span>
+               </div>
+              <div class="total-row">
+                <span>Tổng cộng:</span>
+                <span style="color: #d00;">${order?.total.toLocaleString("vi-VN")}₫</span>
+              </div>
+               <div style="margin-top: 20px; text-align: right; font-size: 12px; color: #666;">
+                PTTT: ${order?.paymentMethod}
+              </div>
+            </div>
+            <div class="clear"></div>
+          </div>
+        </body>
+        </html>
+      `)
+      doc.close()
+
+      // Give the iframe a moment to render content/fonts
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const canvas = await html2canvas(doc.body, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      })
+
+      document.body.removeChild(iframe)
+
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      })
+
+      const imgWidth = 210
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight)
+      pdf.save(`Order-${order?.orderCode}.pdf`)
+
+      toast.success("Đã tải xuống đơn hàng")
+    } catch (error) {
+      console.error("Download failed:", error)
+      toast.error("Không thể tải xuống đơn hàng")
+    }
+  }
+
   if (authLoading || loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -144,9 +291,9 @@ export default function OrderDetailPage({
       <main className="flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-4">
-              <Link href="/account/orders">
+              <Link href="/account/orders" className="no-print">
                 <button className="p-2 hover:bg-muted rounded-lg transition">
                   <ChevronLeft size={20} />
                 </button>
@@ -224,7 +371,6 @@ export default function OrderDetailPage({
                 );
               })}
             </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Order Items */}
