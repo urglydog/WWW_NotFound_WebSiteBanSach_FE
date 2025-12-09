@@ -619,6 +619,9 @@ export default function OrderDetailPage({
                                     "Đánh giá của bạn đã được gửi!"
                                   );
 
+                                  // Hide the reviewed item
+                                  setReviewedItems((prev) => new Set(prev).add(index));
+
                                   // Clear form after successful submission
                                   setRatings((prev) => {
                                     const newRatings = { ...prev };
@@ -654,7 +657,8 @@ export default function OrderDetailPage({
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}
