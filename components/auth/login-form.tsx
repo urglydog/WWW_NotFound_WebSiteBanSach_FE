@@ -19,9 +19,24 @@ function LoginFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectPath = searchParams.get("redirect")
-  const googleOAuthUrl =
-    process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL ??
-    "https://accounts.google.com/o/oauth2/v2/auth?client_id=890914555873-2fj89b3o9srebvjhu6a66hjehtljac8p.apps.googleusercontent.com&redirect_uri=http://localhost:8080/api/auth/google/callback&response_type=code&scope=openid%20email%20profile"
+  
+  // Build Google OAuth URL dynamically
+  const getGoogleOAuthUrl = () => {
+    if (process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL) {
+      return process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL
+    }
+    
+    // Get backend URL from env or construct from API URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+    const backendBaseUrl = apiUrl.replace("/api", "")
+    const redirectUri = `${backendBaseUrl}/api/auth/google/callback`
+    
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "890914555873-2fj89b3o9srebvjhu6a66hjehtljac8p.apps.googleusercontent.com"
+    
+    return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile`
+  }
+  
+  const googleOAuthUrl = getGoogleOAuthUrl()
 
   const resetError = () => {
     if (error) {
