@@ -51,7 +51,7 @@ const STORE_INFO = {
   name: "Nhà Sách Online",
   phone: "1900-123-456",
   email: "contact@bookstore.vn",
-  address: "123 Đường ABC, Hà Nội",
+  address: "12 Đường Nguyễn Văn Bảo, Gò Vấp, HCM",
 };
 
 export function ChatbotFloatingButton() {
@@ -74,6 +74,17 @@ export function ChatbotFloatingButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  // Quick suggestions
+  const quickSuggestions = [
+    "Xin chào!",
+    "Sách bán chạy",
+    "Hôm nay là ngày mấy",
+    "Sách trong khoảng giá 100k-200k",
+  ];
+
+  // Show suggestions only when there are few messages (just welcome message or empty)
+  const showSuggestions = messages.length <= 1;
 
   // Auto scroll to bottom when new message is added
   useEffect(() => {
@@ -253,6 +264,53 @@ export function ChatbotFloatingButton() {
       handleSend();
     }
   };
+
+  // Handle quick suggestion click
+  const handleQuickSuggestion = useCallback(async (suggestion: string) => {
+    if (loading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: suggestion,
+      isUser: true,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
+
+    try {
+      const response = await chatService.sendMessage({
+        message: suggestion,
+        sessionId: sessionId,
+      });
+
+      if (response.sessionId) {
+        setSessionId(response.sessionId);
+      }
+
+      const botMessage: Message = {
+        id: Date.now().toString() + "bot",
+        text: cleanMarkdown(response.response),
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      const errorMessage: Message = {
+        id: Date.now().toString() + "error",
+        text:
+          error.message ||
+          "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, sessionId]);
 
 
   return (
@@ -491,6 +549,27 @@ export function ChatbotFloatingButton() {
 
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Quick Suggestions */}
+            {showSuggestions && !loading && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {quickSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickSuggestion(suggestion)}
+                    className={cn(
+                      "rounded-full px-4 py-2 text-xs font-medium",
+                      "bg-muted text-muted-foreground",
+                      "hover:bg-primary hover:text-primary-foreground",
+                      "transition-colors duration-200",
+                      "border border-border hover:border-primary"
+                    )}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Input Container */}

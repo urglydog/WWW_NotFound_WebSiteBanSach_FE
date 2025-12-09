@@ -83,7 +83,7 @@ export default function AccountPage() {
         localStorage.setItem("user", JSON.stringify(updatedUser)); // Or handle by auth context
       }
 
-      setLocalEmailVerified(profile.emailVerified || false);
+      // setLocalEmailVerified(profile.emailVerified || false);
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
     } finally {

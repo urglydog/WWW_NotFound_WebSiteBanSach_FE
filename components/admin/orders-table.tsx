@@ -79,7 +79,7 @@ export function OrdersTable({
                     <div className="flex flex-col">
                       <span className="font-semibold text-primary text-sm">{order.orderCode || order.id.substring(0, 8)}</span>
                       <span className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-none">
-                        {order.shippingAddress.district}, {order.shippingAddress.province}
+                        {order.shippingDistrict}, {order.shippingProvince}
                       </span>
                     </div>
                   </td>
