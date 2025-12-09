@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -10,7 +10,8 @@ import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
 
-export function LoginForm() {
+// Component that uses useSearchParams (needs Suspense boundary)
+function LoginFormContent() {
   const [formData, setFormData] = useState({ username: "", password: "" })
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -135,5 +136,20 @@ export function LoginForm() {
         </p>
       </div>
     </form>
+  )
+}
+
+// Main component with Suspense boundary
+export function LoginForm() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-4">
+        <div className="h-10 bg-muted animate-pulse rounded-lg" />
+        <div className="h-10 bg-muted animate-pulse rounded-lg" />
+        <div className="h-10 bg-muted animate-pulse rounded-lg" />
+      </div>
+    }>
+      <LoginFormContent />
+    </Suspense>
   )
 }

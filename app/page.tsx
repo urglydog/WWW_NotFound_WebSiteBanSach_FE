@@ -1,7 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+
+// Force dynamic rendering to avoid static generation issues with useSearchParams
+export const dynamic = 'force-dynamic'
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { RecommendationSection } from "@/components/recommendations/recommendation-section"
@@ -16,41 +19,12 @@ import { message } from "antd"
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 
-export default function Home() {
+// Component to handle search params callback (needs Suspense boundary)
+function AuthCallbackHandler() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setUserState, user } = useAuth()
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
-  const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
-  const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
-  const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
-  const [literatureBooks, setLiteratureBooks] = useState<Book[]>([])
-  
-  // Embla Carousel for hero section
-  const [emblaRef] = useEmblaCarousel(
-    { loop: true },
-    [Autoplay({ delay: 3000, stopOnInteraction: false })]
-  )
-
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const [bestSellers, suggested, categoriesWithBooks, literatureResponse] = await Promise.all([
-          booksService.getBestSellers(4),
-          booksService.getSuggestedBooks(4),
-          booksService.getBooksByPopularCategories(3),
-          booksService.getBooks({ size: 4 })
-        ])
-        setBestSellingBooks(bestSellers)
-        setSuggestedBooks(suggested)
-        setPopularCategoriesWithBooks(categoriesWithBooks)
-        setLiteratureBooks(literatureResponse.content)
-      } catch (error) {
-        console.error("Failed to fetch books:", error)
-      }
-    }
-    fetchBooks()
-  }, [])
 
   useEffect(() => {
     // Tránh xử lý callback nhiều lần
@@ -241,7 +215,43 @@ export default function Home() {
         router.replace("/")
       }, 200)
     }
-  }, [router, searchParams, setUserState, hasProcessedCallback])
+  }, [router, searchParams, setUserState, hasProcessedCallback, user])
+
+  return null
+}
+
+// Main content component
+function HomeContent() {
+  const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
+  const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
+  const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
+  const [literatureBooks, setLiteratureBooks] = useState<Book[]>([])
+  
+  // Embla Carousel for hero section
+  const [emblaRef] = useEmblaCarousel(
+    { loop: true },
+    [Autoplay({ delay: 3000, stopOnInteraction: false })]
+  )
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const [bestSellers, suggested, categoriesWithBooks, literatureResponse] = await Promise.all([
+          booksService.getBestSellers(4),
+          booksService.getSuggestedBooks(4),
+          booksService.getBooksByPopularCategories(3),
+          booksService.getBooks({ size: 4 })
+        ])
+        setBestSellingBooks(bestSellers)
+        setSuggestedBooks(suggested)
+        setPopularCategoriesWithBooks(categoriesWithBooks)
+        setLiteratureBooks(literatureResponse.content)
+      } catch (error) {
+        console.error("Failed to fetch books:", error)
+      }
+    }
+    fetchBooks()
+  }, [])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -423,5 +433,26 @@ export default function Home() {
 
       <Footer />
     </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Đang tải...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <AuthCallbackHandler />
+      <HomeContent />
+    </Suspense>
   )
 }

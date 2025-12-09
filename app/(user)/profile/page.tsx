@@ -2,7 +2,7 @@
 
 import { UserLayout } from "@/components/layout/user-layout"
 import { Tabs, Form, Input, Button, Table, Card, Empty, message, Spin } from "antd"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 const mockOrders = [
@@ -27,7 +27,7 @@ const mockWishlist = [
   { id: 5, title: "Lịch sử Việt Nam thời kỳ cổ đại", price: 120000 },
 ]
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const [form] = Form.useForm()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -210,5 +210,19 @@ export default function ProfilePage() {
         </div>
       </div>
     </UserLayout>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <UserLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Spin size="large" />
+        </div>
+      </UserLayout>
+    }>
+      <ProfilePageContent />
+    </Suspense>
   )
 }
