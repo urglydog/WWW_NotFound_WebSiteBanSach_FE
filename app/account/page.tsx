@@ -3,13 +3,14 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { EmailVerification } from "@/components/auth/email-verification";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, type User } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2 } from "lucide-react";
+import { LogOut, User as UserIcon, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usersService } from "@/lib/services/users.service";
+import { ordersService, OrderResponse } from "@/lib/services/orders.service";
 import Image from "next/image";
 
 interface UserProfile {
@@ -31,6 +32,8 @@ import { WishlistSection } from "@/components/account/wishlist-section";
 import { addressService, type Address } from "@/lib/services";
 import { AddressSelectModal } from "@/components/products/address-select-modal";
 
+import { ProfileEditDialog } from "@/components/account/profile-edit-dialog";
+
 export default function AccountPage() {
   const { user, logout, isLoading, setUserState } = useAuth();
   const router = useRouter();
@@ -43,69 +46,56 @@ export default function AccountPage() {
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
   // // Fetch user profile from API - fetch khi user có và chưa fetch
-  // useEffect(() => {
-  //   // Tránh fetch nhiều lần
-  //   if (hasFetchedProfile) {
-  //     return;
-  //   }
+  // Fetch user profile from API
+  const fetchUserProfile = async () => {
+    if (!user) return;
 
-  //   const token = localStorage.getItem("authToken");
-  //   if (!token || !user) {
-  //     setLoadingProfile(false);
-  //     return;
-  //   }
+    try {
+      setLoadingProfile(true);
+      const profile = await usersService.getMyProfile();
+      setUserProfile(profile as UserProfile);
 
-  //   console.log("abadsadasdsadsadsadsadsadsadsadsadsa")
+      // Update AuthContext with latest user info including avatarUrl
+      const updatedUser = {
+        ...user,
+        avatar: profile.avatar || profile.avatarUrl || user.avatar,
+        emailVerified: profile.emailVerified ?? user.isEmailVerified,
+        fullName: profile.fullName || user.fullName,
+        phone: profile.phoneNumber || user.phone,
+        username: profile.username || user.username,
+        gender: profile.gender || user.gender,
+        dateOfBirth: profile.dateOfBirth || user.dateOfBirth,
+        // Preserve other fields
+      };
 
-  //   const fetchUserProfile = async () => {
-  //     // Đánh dấu đã fetch để tránh fetch lại
-  //     setHasFetchedProfile(true);
+      // Check if critical fields changed before updating context to avoid loops
+      if (
+        updatedUser.avatar !== user.avatar ||
+        updatedUser.fullName !== user.fullName ||
+        updatedUser.phone !== user.phone
+      ) {
+        setUserState(updatedUser);
+        // Update localStorage with new info
+        localStorage.setItem("user", JSON.stringify(updatedUser)); // Or handle by auth context
+      }
 
-  //     try {
-  //       const profile = await usersService.getMyProfile();
-  //       setUserProfile(profile as UserProfile);
-        
-  //       // Update AuthContext with latest user info including avatarUrl
-  //       // Chỉ update nếu có thay đổi thực sự để tránh trigger lại
-  //       const updatedUser = {
-  //         ...user,
-  //         avatar: profile.avatarUrl || profile.avatar || user.avatar,
-  //         emailVerified: profile.emailVerified ?? user.isEmailVerified,
-  //         fullName: profile.fullName || user.fullName,
-  //         phone: profile.phoneNumber || user.phone,
-  //         username: profile.username || user.username,
-  //       };
-        
-  //       // Chỉ update nếu có thay đổi
-  //       const hasChanges = 
-  //         updatedUser.avatar !== user.avatar ||
-  //         updatedUser.emailVerified !== user.isEmailVerified ||
-  //         updatedUser.fullName !== user.fullName ||
-  //         updatedUser.phone !== user.phone ||
-  //         updatedUser.username !== user.username;
-        
-  //       if (hasChanges) {
-  //         setUserState(updatedUser);
-  //         localStorage.setItem("user", JSON.stringify(updatedUser));
-  //       }
-        
-  //       console.log("------------------------------------"+ profile.emailVerified)
+      setLocalEmailVerified(profile.emailVerified || false);
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+    } finally {
+      setLoadingProfile(false);
+      setHasFetchedProfile(true);
+    }
+  };
 
-  //       setLocalEmailVerified(profile.emailVerified || false);
-  //     } catch (error) {
-  //       console.error("Failed to fetch user profile:", error);
-  //       // Reset flag nếu có lỗi để có thể retry
-  //       setHasFetchedProfile(false);
-  //     } finally {
-  //       setLoadingProfile(false);
-  //     }
-  //   };
-
-  //   fetchUserProfile();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [user?.id]); // Chạy khi user.id thay đổi (khi user được load)
+  useEffect(() => {
+    if (user?.id && !hasFetchedProfile) {
+      fetchUserProfile();
+    }
+  }, [user?.id, hasFetchedProfile]);
 
   // Refresh user from localStorage on mount AND when emailVerified event fires
 
@@ -175,7 +165,22 @@ export default function AccountPage() {
     if (activeTab === "addresses" && user) {
       loadAddresses();
     }
+    if (activeTab === "orders" && user) {
+      loadOrders();
+    }
   }, [activeTab, user]);
+
+  const loadOrders = async () => {
+    try {
+      setOrdersLoading(true)
+      const data = await ordersService.getMyOrders()
+      setOrders(data)
+    } catch (error) {
+      console.error("Failed to fetch orders:", error)
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
 
   const loadAddresses = async () => {
     try {
@@ -300,55 +305,50 @@ export default function AccountPage() {
                 <nav className="space-y-2 mb-6">
                   <button
                     onClick={() => setActiveTab("profile")}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
-                      activeTab === "profile"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-foreground"
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${activeTab === "profile"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground"
+                      }`}
                   >
-                    <User size={18} />
+                    <UserIcon size={18} />
                     Thông tin cá nhân
                   </button>
                   <button
                     onClick={() => setActiveTab("orders")}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
-                      activeTab === "orders"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-foreground"
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${activeTab === "orders"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground"
+                      }`}
                   >
                     <ShoppingBag size={18} />
                     Đơn hàng
                   </button>
                   <button
                     onClick={() => setActiveTab("wishlist")}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
-                      activeTab === "wishlist"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-foreground"
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${activeTab === "wishlist"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground"
+                      }`}
                   >
                     <Heart size={18} />
                     Danh sách yêu thích
                   </button>
                   <button
                     onClick={() => setActiveTab("addresses")}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
-                      activeTab === "addresses"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-foreground"
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${activeTab === "addresses"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground"
+                      }`}
                   >
                     <MapPin size={18} />
                     Địa chỉ của tôi
                   </button>
                   <button
                     onClick={() => setActiveTab("settings")}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${
-                      activeTab === "settings"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-foreground"
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-2 transition ${activeTab === "settings"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground"
+                      }`}
                   >
                     <Settings size={18} />
                     Cài đặt
@@ -430,8 +430,8 @@ export default function AccountPage() {
                           Giới tính
                         </label>
                         <p className="text-foreground font-medium">
-                          {userProfile?.gender 
-                            ? (userProfile.gender === "MALE" ? "Nam" : userProfile.gender === "FEMALE" ? "Nữ" : "Khác")
+                          {userProfile?.gender
+                            ? (userProfile.gender.toUpperCase() === "MALE" ? "Nam" : userProfile.gender.toUpperCase() === "FEMALE" ? "Nữ" : "Khác")
                             : "Chưa cập nhật"}
                         </p>
                       </div>
@@ -472,7 +472,7 @@ export default function AccountPage() {
                         </div>
                       )}
                     </div>
-                    <Button className="mt-4">Chỉnh sửa thông tin</Button>
+                    <Button className="mt-4" onClick={() => setIsEditingProfile(true)}>Chỉnh sửa thông tin</Button>
                   </div>
                 </div>
               )}
@@ -482,15 +482,82 @@ export default function AccountPage() {
                   <h2 className="text-2xl font-bold text-foreground mb-6">
                     Đơn hàng của tôi
                   </h2>
-                  <div className="text-center py-12">
-                    <ShoppingBag
-                      size={48}
-                      className="mx-auto text-muted-foreground mb-4 opacity-50"
-                    />
-                    <p className="text-muted-foreground">
-                      Chưa có đơn hàng nào
-                    </p>
-                  </div>
+
+                  {ordersLoading ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">Đang tải đơn hàng...</p>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ShoppingBag
+                        size={48}
+                        className="mx-auto text-muted-foreground mb-4 opacity-50"
+                      />
+                      <p className="text-muted-foreground mb-4">
+                        Chưa có đơn hàng nào
+                      </p>
+                      <Link href="/products">
+                        <Button>Mua sắm ngay</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orders.map((order) => {
+                        const statusConfig: Record<string, { label: string; color: string }> = {
+                          PENDING: { label: "Chờ xác nhận", color: "bg-yellow-100 text-yellow-700" },
+                          CONFIRMED: { label: "Đã xác nhận", color: "bg-blue-100 text-blue-700" },
+                          PROCESSING: { label: "Đang chuẩn bị", color: "bg-blue-100 text-blue-700" },
+                          SHIPPED: { label: "Đang giao", color: "bg-purple-100 text-purple-700" },
+                          DELIVERED: { label: "Đã giao", color: "bg-green-100 text-green-700" },
+                          CANCELLED: { label: "Đã hủy", color: "bg-red-100 text-red-700" },
+                          COMPLETED: { label: "Hoàn thành", color: "bg-green-100 text-green-700" },
+                        }
+                        const config = statusConfig[order.status] || { label: order.status, color: "bg-gray-100 text-gray-700" }
+
+                        return (
+                          <Link key={order.id} href={`/account/orders/${order.id}`}>
+                            <div className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition cursor-pointer">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <h3 className="font-bold text-lg text-foreground">Đơn hàng #{order.orderCode || order.id.substring(0, 8)}</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(order.orderDate).toLocaleDateString("vi-VN")}
+                                  </p>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
+                                  {config.label}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Số lượng sách</p>
+                                  <p className="font-semibold text-foreground">{order.items.length}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Tổng tiền</p>
+                                  <p className="font-semibold text-primary text-lg">{order.total.toLocaleString("vi-VN")}₫</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Phương thức thanh toán</p>
+                                  <p className="font-semibold text-foreground">
+                                    {order.paymentMethod}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-primary">
+                                  <span className="text-sm font-medium">Xem chi tiết</span>
+                                  <ChevronRight size={16} />
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -507,7 +574,7 @@ export default function AccountPage() {
                       Thêm địa chỉ mới
                     </Button>
                   </div>
-                  
+
                   {addressesLoading ? (
                     <div className="text-center py-12">
                       <p className="text-muted-foreground">Đang tải...</p>
@@ -618,7 +685,7 @@ export default function AccountPage() {
           setEditingAddress(null);
         }}
         addresses={addresses}
-        onSelectAddress={() => {}}
+        onSelectAddress={() => { }}
         onAddressCreated={() => {
           loadAddresses();
           setIsAddressModalOpen(false);
@@ -630,6 +697,12 @@ export default function AccountPage() {
           setIsAddressModalOpen(false);
           setEditingAddress(null);
         }}
+      />
+      <ProfileEditDialog
+        user={userProfile && Object.keys(userProfile).length > 0 ? (userProfile as unknown as User) : user}
+        open={isEditingProfile}
+        onOpenChange={setIsEditingProfile}
+        onProfileUpdated={fetchUserProfile}
       />
     </div>
   );

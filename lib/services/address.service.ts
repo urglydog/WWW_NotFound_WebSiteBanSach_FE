@@ -10,7 +10,13 @@ export interface AddressResponse {
     province: string
     latitude: number
     longitude: number
+    provinceId: number
+    districtId: number
+    wardCode: string
 }
+export type Address = AddressResponse
+
+export type Address = AddressResponse;
 
 export interface CreateAddressRequest {
     recipientName: string

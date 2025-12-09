@@ -2,14 +2,32 @@
 
 import { useCart } from "@/lib/cart-context"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { X, Trash2, Loader2 } from "lucide-react"
 
 export function CartSidebar() {
-  const { cart, itemCount, isOpen, loading, updateQuantity, removeItem, closeCart } = useCart()
+  const {
+    cart,
+    itemCount,
+    isOpen,
+    loading,
+    updateQuantity,
+    removeItem,
+    closeCart,
+    selectedItems,
+    toggleItemSelection,
+    selectAll
+  } = useCart()
 
   const items = cart?.items || []
-  const total = cart?.totalPrice || 0
+
+  // Calculate total based on selected items
+  const selectedCartItems = items.filter(item => selectedItems.includes(item.bookId))
+  const subtotal = selectedCartItems.reduce((sum, item) => sum + ((item.bookDiscountPrice ?? item.bookPrice) * item.quantity), 0)
+  const total = subtotal // Shipping is free/calculated elsewhere usually, keeping simple matching other page
+
+  const isAllSelected = items.length > 0 && selectedItems.length === items.length
 
   return (
     <>
@@ -46,8 +64,29 @@ export function CartSidebar() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Select All */}
+              <div className="flex items-center gap-2 pb-2 border-b border-border">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={(checked) => selectAll(!!checked)}
+                  id="sidebar-select-all"
+                />
+                <label htmlFor="sidebar-select-all" className="text-sm font-medium cursor-pointer select-none">
+                  Chọn tất cả ({items.length})
+                </label>
+              </div>
+
               {items.map((item) => (
                 <div key={item.itemId} className="flex gap-4 pb-4 border-b border-border">
+                  {/* Ckeckbox */}
+                  <div className="self-center">
+                    <Checkbox
+                      checked={selectedItems.includes(item.bookId)}
+                      onCheckedChange={() => toggleItemSelection(item.bookId)}
+                      aria-label={`Select ${item.bookTitle}`}
+                    />
+                  </div>
+
                   {/* Image */}
                   <div className="w-16 h-24 bg-muted rounded shrink-0 flex items-center justify-center">
                     <img
@@ -71,9 +110,9 @@ export function CartSidebar() {
                     </p>
                     <div className="flex items-baseline gap-2">
                       <p className="font-semibold text-primary">
-                        {(item.bookDiscountPrice || item.bookPrice).toLocaleString("vi-VN")}₫
+                        {(item.bookDiscountPrice ?? item.bookPrice).toLocaleString("vi-VN")}₫
                       </p>
-                      {item.bookDiscountPrice && item.bookDiscountPrice < item.bookPrice && (
+                      {item.bookDiscountPrice && (
                         <span className="text-xs text-muted-foreground line-through">
                           {item.bookPrice.toLocaleString("vi-VN")}₫
                         </span>
@@ -136,6 +175,10 @@ export function CartSidebar() {
           <div className="border-t border-border p-6 space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between">
+                <span className="text-muted-foreground">Đã chọn:</span>
+                <span className="font-semibold">{selectedItems.length} sản phẩm</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">Tạm tính:</span>
                 <span className="font-semibold">{total.toLocaleString("vi-VN")}₫</span>
               </div>
@@ -148,8 +191,10 @@ export function CartSidebar() {
               <span className="font-bold">Tổng cộng:</span>
               <span className="font-bold text-lg text-primary">{total.toLocaleString("vi-VN")}₫</span>
             </div>
-            <Link href="/checkout" className="block" onClick={closeCart}>
-              <Button className="w-full bg-primary hover:bg-primary/90">Thanh toán</Button>
+            <Link href={selectedItems.length > 0 ? "/checkout" : "#"} className="block" onClick={(e) => { closeCart(); if (selectedItems.length === 0) e.preventDefault() }}>
+              <Button className="w-full bg-primary hover:bg-primary/90" disabled={loading || selectedItems.length === 0}>
+                Thanh toán ({selectedItems.length})
+              </Button>
             </Link>
             <Button
               variant="outline"
