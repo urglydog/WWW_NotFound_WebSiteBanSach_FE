@@ -334,24 +334,22 @@ export default function OrderDetailPage({
                     className="flex flex-col items-center flex-1 min-w-[100px] relative"
                   >
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-300 ${
-                        isCurrent
+                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-300 ${isCurrent
                           ? `${stepColors.bg} ${stepColors.text} ring-4 ${stepColors.ring} scale-110 shadow-lg`
                           : isPassed
-                          ? `${stepColors.bg} ${stepColors.text}`
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                            ? `${stepColors.bg} ${stepColors.text}`
+                            : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {index + 1}
                     </div>
                     <p
-                      className={`text-xs text-center font-medium transition-all duration-300 ${
-                        isCurrent
+                      className={`text-xs text-center font-medium transition-all duration-300 ${isCurrent
                           ? `${stepColors.text} font-bold scale-105`
                           : isActive
-                          ? "text-foreground"
-                          : "text-muted-foreground"
-                      }`}
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }`}
                     >
                       {step.label}
                     </p>
@@ -365,9 +363,8 @@ export default function OrderDetailPage({
                     {index < statusSteps.length - 1 && (
                       <div className="absolute top-6 left-[60%] w-full h-0.5 -z-10">
                         <div
-                          className={`h-full transition-all duration-500 ${
-                            isPassed ? stepColors.bg : "bg-muted"
-                          }`}
+                          className={`h-full transition-all duration-500 ${isPassed ? stepColors.bg : "bg-muted"
+                            }`}
                         />
                       </div>
                     )}
@@ -550,11 +547,10 @@ export default function OrderDetailPage({
                                   className="hover:scale-110 transition-transform focus:outline-none"
                                 >
                                   <Star
-                                    className={`w-6 h-6 ${
-                                      star <= (ratings[index] || 0)
+                                    className={`w-6 h-6 ${star <= (ratings[index] || 0)
                                         ? "fill-yellow-400 text-yellow-400"
                                         : "text-gray-300"
-                                    }`}
+                                      }`}
                                   />
                                 </button>
                               ))}
@@ -640,7 +636,7 @@ export default function OrderDetailPage({
                                   );
                                   toast.error(
                                     error.message ||
-                                      "Không thể gửi đánh giá. Vui lòng thử lại."
+                                    "Không thể gửi đánh giá. Vui lòng thử lại."
                                   );
                                 } finally {
                                   setSubmitting((prev) => ({
