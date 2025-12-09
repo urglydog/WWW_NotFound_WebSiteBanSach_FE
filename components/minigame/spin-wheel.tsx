@@ -1,0 +1,198 @@
+"use client"
+
+import { useState, useRef, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Gift, Sparkles } from "lucide-react"
+
+interface WheelSegment {
+  label: string
+  color: string
+  textColor: string
+  value: string
+}
+
+const segments: WheelSegment[] = [
+  { label: "10%", color: "#E85D4C", textColor: "#fff", value: "Giảm 10% đơn hàng" },
+  { label: "20%", color: "#4CAF50", textColor: "#fff", value: "Giảm 20% đơn hàng" },
+  { label: "5%", color: "#FF9800", textColor: "#fff", value: "Giảm 5% đơn hàng" },
+  { label: "FREE SHIP", color: "#2196F3", textColor: "#fff", value: "Miễn phí vận chuyển" },
+  { label: "30%", color: "#9C27B0", textColor: "#fff", value: "Giảm 30% đơn hàng" },
+  { label: "1 SÁCH", color: "#F44336", textColor: "#fff", value: "Tặng 1 cuốn sách bất kỳ" },
+  { label: "15%", color: "#00BCD4", textColor: "#fff", value: "Giảm 15% đơn hàng" },
+  { label: "50K", color: "#FFC107", textColor: "#333", value: "Voucher 50.000đ" },
+]
+
+interface SpinWheelProps {
+  onSpinComplete: (prize: WheelSegment) => void
+}
+
+export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
+  const [rotation, setRotation] = useState(0)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const segmentAngle = 360 / segments.length
+
+  useEffect(() => {
+    drawWheel()
+  }, [rotation])
+
+  const drawWheel = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const centerX = canvas.width / 2
+    const centerY = canvas.height / 2
+    const radius = Math.min(centerX, centerY) - 10
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Draw shadow
+    ctx.save()
+    ctx.shadowColor = "rgba(0, 0, 0, 0.3)"
+    ctx.shadowBlur = 20
+    ctx.shadowOffsetX = 5
+    ctx.shadowOffsetY = 5
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+    ctx.fillStyle = "#fff"
+    ctx.fill()
+    ctx.restore()
+
+    // Draw segments
+    segments.forEach((segment, index) => {
+      const startAngle = (index * segmentAngle - 90 + rotation) * (Math.PI / 180)
+      const endAngle = ((index + 1) * segmentAngle - 90 + rotation) * (Math.PI / 180)
+
+      ctx.beginPath()
+      ctx.moveTo(centerX, centerY)
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle)
+      ctx.closePath()
+      ctx.fillStyle = segment.color
+      ctx.fill()
+
+      // Draw segment border
+      ctx.strokeStyle = "#fff"
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // Draw text
+      ctx.save()
+      ctx.translate(centerX, centerY)
+      ctx.rotate(startAngle + (segmentAngle * Math.PI) / 360)
+      ctx.textAlign = "right"
+      ctx.fillStyle = segment.textColor
+      ctx.font = "bold 14px Geist, sans-serif"
+      ctx.fillText(segment.label, radius - 20, 5)
+      ctx.restore()
+    })
+
+    // Draw center circle
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, 35, 0, 2 * Math.PI)
+    ctx.fillStyle = "#fff"
+    ctx.fill()
+    ctx.strokeStyle = "#E85D4C"
+    ctx.lineWidth = 4
+    ctx.stroke()
+
+    // Draw center icon
+    ctx.fillStyle = "#E85D4C"
+    ctx.font = "24px sans-serif"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText("📚", centerX, centerY)
+  }
+
+  const spin = () => {
+    if (isSpinning) return
+
+    setIsSpinning(true)
+
+    const randomDegrees = Math.floor(Math.random() * 360)
+    const spins = 5 + Math.floor(Math.random() * 3)
+    const totalRotation = spins * 360 + randomDegrees
+
+    let currentRotation = rotation
+    const targetRotation = rotation + totalRotation
+    const duration = 5000
+    const startTime = Date.now()
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+
+      // Easing function for smooth deceleration
+      const easeOut = 1 - Math.pow(1 - progress, 4)
+
+      currentRotation = rotation + totalRotation * easeOut
+      setRotation(currentRotation % 360)
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        setIsSpinning(false)
+        // Calculate winning segment
+        const normalizedRotation = (360 - (currentRotation % 360) + 90) % 360
+        const winningIndex = Math.floor(normalizedRotation / segmentAngle) % segments.length
+        onSpinComplete(segments[winningIndex])
+      }
+    }
+
+    requestAnimationFrame(animate)
+  }
+
+  return (
+    <div className="relative flex flex-col items-center">
+      {/* Pointer */}
+      <div className="absolute top-0 z-10 -mt-2">
+        <div className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[30px] border-l-transparent border-r-transparent border-t-primary drop-shadow-lg" />
+      </div>
+
+      {/* Wheel */}
+      <div className="relative mt-4">
+        <canvas ref={canvasRef} width={320} height={320} className="drop-shadow-xl" />
+
+        {/* Decorative lights */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(16)].map((_, i) => (
+            <div
+              key={i}
+              className={`absolute w-3 h-3 rounded-full ${isSpinning ? "animate-pulse" : ""}`}
+              style={{
+                left: `${50 + 47 * Math.cos((i * 22.5 - 90) * (Math.PI / 180))}%`,
+                top: `${50 + 47 * Math.sin((i * 22.5 - 90) * (Math.PI / 180))}%`,
+                backgroundColor: i % 2 === 0 ? "#FFC107" : "#E85D4C",
+                transform: "translate(-50%, -50%)",
+                boxShadow: `0 0 10px ${i % 2 === 0 ? "#FFC107" : "#E85D4C"}`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Spin button */}
+      <Button
+        onClick={spin}
+        disabled={isSpinning}
+        size="lg"
+        className="mt-6 px-8 py-6 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+      >
+        {isSpinning ? (
+          <>
+            <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+            Đang quay...
+          </>
+        ) : (
+          <>
+            <Gift className="mr-2 h-5 w-5" />
+            QUAY NGAY
+          </>
+        )}
+      </Button>
+    </div>
+  )
+}
