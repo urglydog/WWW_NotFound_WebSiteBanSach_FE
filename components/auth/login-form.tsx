@@ -2,26 +2,26 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, Suspense } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
 
-export function LoginForm() {
-  const [formData, setFormData] = useState({ identifier: "", password: "" })
+// Component that uses useSearchParams (needs Suspense boundary)
+function LoginFormContent() {
+  const [formData, setFormData] = useState({ username: "", password: "" })
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false)
-  const [isGoogleButtonReady, setIsGoogleButtonReady] = useState(false)
-  const [googleError, setGoogleError] = useState("")
-  const googleButtonRef = useRef<HTMLDivElement>(null)
-  const googleButtonRenderedRef = useRef(false)
-  const { login, loginWithGoogle, isLoading } = useAuth()
+  const { login, isLoading } = useAuth()
   const router = useRouter()
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get("redirect")
+  const googleOAuthUrl =
+    process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL ??
+    "https://accounts.google.com/o/oauth2/v2/auth?client_id=890914555873-2fj89b3o9srebvjhu6a66hjehtljac8p.apps.googleusercontent.com&redirect_uri=3.26.33.103:8080/api/auth/google/callback&response_type=code&scope=openid%20email%20profile"
 
   const resetError = () => {
     if (error) {
@@ -33,126 +33,28 @@ export function LoginForm() {
     e.preventDefault()
     setError("")
 
-    if (!formData.identifier || !formData.password) {
-      setError("Vui lòng điền đầy đủ thông tin")
+    if (!formData.username || !formData.password) {
+      setError("Vui lòng nhập tên đăng nhập và mật khẩu")
       return
     }
 
     try {
-      const authenticatedUser = await login(formData.identifier, formData.password)
+      const authenticatedUser = await login(formData.username, formData.password)
       const isAdmin = typeof authenticatedUser.role === "string" && authenticatedUser.role.toUpperCase() === "ADMIN"
-      router.push(isAdmin ? "/admin" : "/account")
+
+      if (redirectPath) {
+        router.push(redirectPath)
+      } else {
+        router.push(isAdmin ? "/admin" : "/account")
+      }
     } catch (err) {
       if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
-        setError("Sai tên đăng nhập/email hoặc mật khẩu. Vui lòng kiểm tra lại.")
+        setError("Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại.")
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại.")
       }
     }
   }
-
-  const handleGoogleCredential = useCallback(
-    async (response: google.accounts.id.CredentialResponse) => {
-      const credential = response?.credential
-      if (!credential) {
-        setError("Không thể xác thực bằng Google. Vui lòng thử lại.")
-        return
-      }
-
-      try {
-        resetError()
-        const authenticatedUser = await loginWithGoogle(credential)
-        const isAdmin = typeof authenticatedUser.role === "string" && authenticatedUser.role.toUpperCase() === "ADMIN"
-        router.push(isAdmin ? "/admin" : "/account")
-      } catch (err) {
-        if (err instanceof Error) {
-          switch (err.message) {
-            case "GOOGLE_SIGNIN_UNCONFIGURED":
-              setError("Google Sign-In chưa được cấu hình. Vui lòng liên hệ quản trị viên.")
-              break
-            case "GOOGLE_SIGNIN_EMAIL_REQUIRED":
-              setError("Google không cung cấp email. Vui lòng chọn tài khoản khác.")
-              break
-            case "GOOGLE_SIGNIN_EMAIL_NOT_VERIFIED":
-              setError("Email Google chưa được xác minh. Vui lòng kiểm tra lại.")
-              break
-            case "GOOGLE_SIGNIN_CREDENTIAL_MISSING":
-            case "GOOGLE_SIGNIN_INVALID_TOKEN":
-              setError("Thông tin xác thực Google không hợp lệ. Vui lòng thử lại.")
-              break
-            default:
-              setError("Đăng nhập Google thất bại. Vui lòng thử lại.")
-          }
-        } else {
-          setError("Đăng nhập Google thất bại. Vui lòng thử lại.")
-        }
-      }
-    },
-    [loginWithGoogle, resetError, router]
-  )
-
-  useEffect(() => {
-    if (!googleClientId) {
-      setGoogleError("Google Sign-In chưa được cấu hình. Vui lòng liên hệ quản trị viên.")
-      return
-    }
-
-    if (typeof window === "undefined") return
-
-    const existingScript = document.getElementById("google-client-script")
-    if (existingScript) {
-      setIsGoogleScriptLoaded(true)
-      return
-    }
-
-    const script = document.createElement("script")
-    script.src = "https://accounts.google.com/gsi/client"
-    script.async = true
-    script.defer = true
-    script.id = "google-client-script"
-    script.onload = () => {
-      setIsGoogleScriptLoaded(true)
-      setGoogleError("")
-    }
-    script.onerror = () => {
-      setGoogleError("Không thể tải Google Sign-In. Vui lòng thử lại sau.")
-    }
-    document.head.appendChild(script)
-  }, [googleClientId])
-
-  useEffect(() => {
-    if (!isGoogleScriptLoaded || !googleClientId || googleButtonRenderedRef.current) {
-      return
-    }
-
-    const google = window.google
-    if (!google?.accounts?.id) {
-      setGoogleError("Không thể khởi tạo Google Sign-In. Vui lòng thử lại.")
-      return
-    }
-
-    if (!googleButtonRef.current) {
-      return
-    }
-
-    google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleCredential,
-      auto_select: false,
-      context: "signin",
-    })
-
-    google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: "outline",
-      size: "large",
-      width: "100%",
-      text: "signin_with",
-      shape: "rectangular",
-    })
-    googleButtonRenderedRef.current = true
-    setIsGoogleButtonReady(true)
-    google.accounts.id.prompt()
-  }, [googleClientId, handleGoogleCredential, isGoogleScriptLoaded])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -163,13 +65,13 @@ export function LoginForm() {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">Email hoặc tên đăng nhập</label>
+        <label className="block text-sm font-medium text-foreground mb-2">Tên đăng nhập</label>
         <input
           type="text"
-          value={formData.identifier}
-          onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+          value={formData.username}
+          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
           className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          placeholder="admin hoặc admin@bookstore.com"
+          placeholder="admin"
         />
       </div>
 
@@ -203,25 +105,51 @@ export function LoginForm() {
           <span>Hoặc</span>
           <span className="h-px w-full bg-border" />
         </div>
-        <div ref={googleButtonRef} className="flex justify-center">
-          {!isGoogleButtonReady && (
-            <Button type="button" variant="outline" className="w-full" disabled>
-              <span className="flex w-full items-center justify-center gap-2">
-                <FcGoogle className="h-5 w-5" />
-                <span>{googleError ? "Google Sign-In chưa sẵn sàng" : "Đang khởi tạo Google..."}</span>
-              </span>
-            </Button>
-          )}
-        </div>
-        {googleError && <p className="text-xs text-destructive text-center">{googleError}</p>}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.location.href = googleOAuthUrl
+            }
+          }}
+        >
+          <span className="flex w-full items-center justify-center gap-2">
+            <FcGoogle className="h-5 w-5" />
+            <span>Đăng nhập với Google</span>
+          </span>
+        </Button>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Chưa có tài khoản?{" "}
-        <Link href="/signup" className="text-primary hover:text-primary/80 font-medium">
-          Đăng ký ngay
-        </Link>
-      </p>
+      <div className="text-center space-y-2">
+        <p className="text-sm text-muted-foreground">
+          <Link href="/forgot-password" className="text-primary hover:text-primary/80 font-medium">
+            Quên mật khẩu?
+          </Link>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Chưa có tài khoản?{" "}
+          <Link href="/signup" className="text-primary hover:text-primary/80 font-medium">
+            Đăng ký ngay
+          </Link>
+        </p>
+      </div>
     </form>
+  )
+}
+
+// Main component with Suspense boundary
+export function LoginForm() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-4">
+        <div className="h-10 bg-muted animate-pulse rounded-lg" />
+        <div className="h-10 bg-muted animate-pulse rounded-lg" />
+        <div className="h-10 bg-muted animate-pulse rounded-lg" />
+      </div>
+    }>
+      <LoginFormContent />
+    </Suspense>
   )
 }

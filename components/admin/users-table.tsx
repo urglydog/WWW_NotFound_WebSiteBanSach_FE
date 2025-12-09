@@ -6,44 +6,44 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import type { User } from "@/hooks/use-user-filters"
+import type { UserManagementResponse } from "@/lib/services/users.service"
 
 interface UsersTableProps {
-  users: User[]
+  users: UserManagementResponse[]
   onDelete: (id: string) => void
   onBan: (id: string) => void
   onUnban: (id: string) => void
-  onView?: (user: User) => void
+  onView?: (user: UserManagementResponse) => void
   className?: string
 }
 
-export function UsersTable({ 
-  users, 
-  onDelete, 
-  onBan, 
-  onUnban, 
+export function UsersTable({
+  users,
+  onDelete,
+  onBan,
+  onUnban,
   onView,
-  className 
+  className
 }: UsersTableProps) {
 
-  const handleDelete = (user: User) => {
+  const handleDelete = (user: UserManagementResponse) => {
     onDelete(user.id)
-    toast.success(`Đã xóa người dùng ${user.name}`)
+    toast.success(`Đã xóa người dùng ${user.fullName}`)
   }
 
-  const handleBan = (user: User) => {
+  const handleBan = (user: UserManagementResponse) => {
     onBan(user.id)
-    toast.success(`Đã cấm người dùng ${user.name}`)
+    toast.success(`Đã cấm người dùng ${user.fullName}`)
   }
 
-  const handleUnban = (user: User) => {
+  const handleUnban = (user: UserManagementResponse) => {
     onUnban(user.id)
-    toast.success(`Đã bỏ cấm người dùng ${user.name}`)
+    toast.success(`Đã bỏ cấm người dùng ${user.fullName}`)
   }
 
-  const getStatusBadge = (user: User) => {
+  const getStatusBadge = (user: UserManagementResponse) => {
     const status = user.status || "active"
-    
+
     switch (status) {
       case "banned":
         return <Badge variant="destructive">Bị cấm</Badge>
@@ -54,7 +54,8 @@ export function UsersTable({
     }
   }
 
-  const getUserInitials = (name: string) => {
+  const getUserInitials = (name: string | null | undefined) => {
+    if (!name) return '??'
     return name
       .split(' ')
       .map(n => n[0])
@@ -105,18 +106,18 @@ export function UsersTable({
               <td className="px-4 py-3 sm:px-6 sm:py-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.avatarUrl || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                      {getUserInitials(user.name)}
+                      {getUserInitials(user.fullName)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-foreground">{user.name}</p>
+                    <p className="font-medium text-foreground">{user.fullName}</p>
                     <p className="text-sm text-muted-foreground md:hidden">{user.email}</p>
                   </div>
                 </div>
               </td>
-              
+
               <td className="px-4 py-3 text-sm text-muted-foreground sm:px-6 sm:py-4 hidden md:table-cell">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
@@ -125,27 +126,27 @@ export function UsersTable({
                   </div>
                   <div className="flex items-center gap-1">
                     <Phone className="w-3 h-3" />
-                    <span>{user.phone}</span>
+                    <span>{user.phoneNumber || 'N/A'}</span>
                   </div>
                 </div>
               </td>
-              
+
               <td className="px-4 py-3 text-sm text-foreground sm:px-6 sm:py-4">
-                <span className="font-medium">{user.orders}</span>
+                <span className="font-medium">{user.totalOrders}</span>
               </td>
-              
+
               <td className="px-4 py-3 font-semibold text-primary sm:px-6 sm:py-4">
                 {user.totalSpent.toLocaleString("vi-VN")}₫
               </td>
-              
+
               <td className="px-4 py-3 text-sm text-muted-foreground sm:px-6 sm:py-4 hidden lg:table-cell">
-                {user.joinDate}
+                {new Date(user.createdAt).toLocaleDateString('vi-VN')}
               </td>
-              
+
               <td className="px-4 py-3 sm:px-6 sm:py-4">
                 {getStatusBadge(user)}
               </td>
-              
+
               <td className="px-4 py-3 sm:px-6 sm:py-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -160,7 +161,7 @@ export function UsersTable({
                         Xem chi tiết
                       </DropdownMenuItem>
                     )}
-                    
+
                     {user.status === "banned" ? (
                       <DropdownMenuItem onClick={() => handleUnban(user)}>
                         <UserCheck className="w-4 h-4 mr-2" />
@@ -175,7 +176,7 @@ export function UsersTable({
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onSelect={(e) => e.preventDefault()}
                           className="text-red-600 focus:text-red-600"
                         >
@@ -187,7 +188,7 @@ export function UsersTable({
                         <AlertDialogHeader>
                           <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa người dùng "{user.name}"? 
+                            Bạn có chắc chắn muốn xóa người dùng "{user.fullName}"?
                             Hành động này không thể hoàn tác.
                           </AlertDialogDescription>
                         </AlertDialogHeader>

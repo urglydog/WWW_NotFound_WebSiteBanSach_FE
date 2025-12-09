@@ -18,6 +18,36 @@ export interface Category {
   updatedAt: string
 }
 
+export interface SampleBook {
+  id: string
+  title: string
+  isbn?: string | null
+  price: number
+  importPrice?: number | null
+  discountPrice: number
+  stockQuantity?: number | null
+  publishDate?: string | null
+  createdAt?: string | null
+  updatedAt?: string | null
+  createdBy?: string | null
+  updatedBy?: string | null
+  categoryId?: string | null
+  description?: string | null
+  status?: string | null
+  authorNames?: string[] | null
+  categoryNames?: string[] | null
+  imageUrls: string[]
+  averageRating?: number | null
+  reviewCount?: number | null
+}
+
+export interface CategoryWithSampleBook {
+  id: string
+  name: string
+  description?: string
+  sampleBook: SampleBook
+}
+
 export interface CreateCategoryRequest {
   name: string
   slug: string
@@ -33,6 +63,20 @@ export const categoriesService = {
    */
   async getCategories(includeInactive: boolean = false): Promise<Category[]> {
     return apiClient.get<Category[]>("/categories", { includeInactive })
+  },
+
+  /**
+   * Get popular categories
+   */
+  async getPopularCategories(limit: number = 6): Promise<Category[]> {
+    return apiClient.get<Category[]>("/categories/popular", { limit })
+  },
+
+  /**
+   * Get categories with sample book
+   */
+  async getCategoriesWithSampleBook(): Promise<CategoryWithSampleBook[]> {
+    return apiClient.get<CategoryWithSampleBook[]>("/categories/with-sample-book")
   },
 
   /**

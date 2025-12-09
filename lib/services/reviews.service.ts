@@ -6,17 +6,14 @@
 import { apiClient, PaginatedResponse } from "../api-client"
 
 export interface Review {
-  id: string
-  bookId: string
+  reviewID: string
   userId: string
   userName: string
   userAvatar?: string
   rating: number
   comment: string
   isVerifiedPurchase: boolean
-  helpful: number
   createdAt: string
-  updatedAt: string
 }
 
 export interface CreateReviewRequest {
@@ -47,7 +44,21 @@ export const reviewsService = {
    * Get reviews for a specific book
    */
   async getBookReviews(bookId: string, filters?: Omit<ReviewFilters, "bookId">): Promise<PaginatedResponse<Review>> {
-    return apiClient.get<PaginatedResponse<Review>>(`/reviews/book/${bookId}`, filters)
+    const response = await apiClient.get<{
+      content: Review[]
+      totalElements: number
+      totalPages: number
+      size: number
+      number: number
+    }>(`/review/book/${bookId}`, filters)
+
+    // apiClient already unwraps the result
+    return {
+      content: response.content || [],
+      currentPage: response.number || 0,
+      totalPages: response.totalPages || 0,
+      totalElements: response.totalElements || 0,
+    }
   },
 
   /**
@@ -61,7 +72,7 @@ export const reviewsService = {
    * Create a new review
    */
   async createReview(data: CreateReviewRequest): Promise<Review> {
-    return apiClient.post<Review>("/reviews", data)
+    return apiClient.post<Review>("/review/book/add", data)
   },
 
   /**

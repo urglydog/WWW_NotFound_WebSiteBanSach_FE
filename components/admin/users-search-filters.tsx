@@ -14,9 +14,11 @@ interface DateRange {
 interface UsersSearchFiltersProps {
   searchTerm: string
   statusFilter: string
+  roleFilter?: string
   dateRange?: DateRange | null
   onSearchChange: (value: string) => void
   onStatusChange: (value: string) => void
+  onRoleChange?: (value: string) => void
   onDateRangeChange?: (range: DateRange | null) => void
   onReset: () => void
   className?: string
@@ -25,15 +27,17 @@ interface UsersSearchFiltersProps {
 export function UsersSearchFilters({
   searchTerm,
   statusFilter,
+  roleFilter = "all",
   dateRange,
   onSearchChange,
   onStatusChange,
+  onRoleChange,
   onDateRangeChange,
   onReset,
   className
 }: UsersSearchFiltersProps) {
 
-  const hasActiveFilters = searchTerm || statusFilter !== "all" || dateRange
+  const hasActiveFilters = searchTerm || statusFilter !== "all" || roleFilter !== "all" || dateRange
 
   const statusOptions = [
     { value: "all", label: "Tất cả trạng thái", icon: Users },
@@ -54,6 +58,13 @@ export function UsersSearchFilters({
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10 bg-background"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              name="user-search-no-autofill"
+              id="user-search-no-autofill"
+              data-form-type="other"
             />
           </div>
 
@@ -83,6 +94,25 @@ export function UsersSearchFilters({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Role Filter */}
+            {onRoleChange && (
+              <div className="space-y-2 sm:min-w-[200px]">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Vai trò
+                </label>
+                <Select value={roleFilter} onValueChange={onRoleChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn vai trò" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả vai trò</SelectItem>
+                    <SelectItem value="CUSTOMER">Khách hàng</SelectItem>
+                    <SelectItem value="ADMIN">Quản trị viên</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Date Range Filter */}
             {onDateRangeChange && (
@@ -127,7 +157,7 @@ export function UsersSearchFilters({
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
               <span className="text-sm text-muted-foreground">Bộ lọc đang áp dụng:</span>
-              
+
               {searchTerm && (
                 <Badge variant="secondary" className="gap-1">
                   <Filter className="w-3 h-3" />
@@ -140,7 +170,7 @@ export function UsersSearchFilters({
                   </button>
                 </Badge>
               )}
-              
+
               {statusFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1">
                   <UserCheck className="w-3 h-3" />
@@ -153,7 +183,7 @@ export function UsersSearchFilters({
                   </button>
                 </Badge>
               )}
-              
+
               {dateRange && (dateRange.from || dateRange.to) && onDateRangeChange && (
                 <Badge variant="secondary" className="gap-1">
                   <Calendar className="w-3 h-3" />
@@ -166,10 +196,10 @@ export function UsersSearchFilters({
                   </button>
                 </Badge>
               )}
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
+
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={onReset}
                 className="ml-2 text-muted-foreground hover:text-foreground"
               >

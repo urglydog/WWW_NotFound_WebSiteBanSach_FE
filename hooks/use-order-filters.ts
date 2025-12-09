@@ -1,17 +1,5 @@
 import { useMemo, useState } from "react"
-
-export interface Order {
-  id: string
-  customer: string
-  email: string
-  phone: string
-  total: number
-  items: number
-  date: string
-  status: string
-  payment: string
-  address: string
-}
+import { OrderResponse } from "@/lib/services/orders.service"
 
 export interface OrderFilterState {
   searchTerm: string
@@ -26,30 +14,33 @@ export interface OrderFilterActions {
   resetFilters: () => void
 }
 
-export function useOrderFilters(orders: Order[]) {
+export function useOrderFilters(orders: OrderResponse[]) {
   // Filter state
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeStatus, setActiveStatus] = useState("Tất cả")
-  const [channel, setChannel] = useState("Tất cả kênh")
+  const [activeStatus, setActiveStatus] = useState("ALL")
+  const [channel, setChannel] = useState("ALL")
 
   // Status options
-  const statusOptions = useMemo(() => 
-    ["Tất cả", "Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"], []
+  const statusOptions = useMemo(() =>
+    ["ALL", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "COMPLETED"], []
   )
 
   // Channel options  
-  const channelOptions = useMemo(() => 
-    ["Tất cả kênh", "Website", "Cửa hàng"], []
+  const channelOptions = useMemo(() =>
+    ["ALL", "Website", "Store"], []
   )
 
   // Filtered orders
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesSearch =
-        order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = activeStatus === "Tất cả" || order.status === activeStatus
-      const matchesChannel = channel === "Tất cả kênh" || channel === "Website"
+        order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.orderCode && order.orderCode.toLowerCase().includes(searchTerm.toLowerCase()))
+
+      const matchesStatus = activeStatus === "ALL" || order.status === activeStatus
+      // Assuming all orders are from Website for now as we don't have channel in OrderResponse
+      const matchesChannel = channel === "ALL" || channel === "Website"
 
       return matchesSearch && matchesStatus && matchesChannel
     })
@@ -58,8 +49,8 @@ export function useOrderFilters(orders: Order[]) {
   // Reset all filters
   const resetFilters = () => {
     setSearchTerm("")
-    setActiveStatus("Tất cả")
-    setChannel("Tất cả kênh")
+    setActiveStatus("ALL")
+    setChannel("ALL")
   }
 
   return {

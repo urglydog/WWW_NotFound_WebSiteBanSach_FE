@@ -5,11 +5,20 @@ import type { CategoryPerformance } from "@/hooks/use-revenue-data"
 interface CategoryPerformanceTableProps {
   data: CategoryPerformance[]
   className?: string
+  loading?: boolean
 }
 
-export function CategoryPerformanceTable({ data, className }: CategoryPerformanceTableProps) {
+export function CategoryPerformanceTable({ data, className, loading }: CategoryPerformanceTableProps) {
   return (
-    <div className={cn("bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm", className)}>
+    <div className={cn("bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm relative", className)}>
+      {loading && (
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground animate-pulse">Đang tải...</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">
@@ -20,7 +29,7 @@ export function CategoryPerformanceTable({ data, className }: CategoryPerformanc
           </p>
         </div>
       </div>
-      
+
       <ScrollArea className="w-full">
         <div className="overflow-x-auto">
           <table className="min-w-full">

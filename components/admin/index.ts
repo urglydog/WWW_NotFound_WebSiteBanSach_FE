@@ -5,6 +5,7 @@ export { PriceRangeSlider } from "./price-range-slider"
 export { CategoryTabs } from "./category-tabs"
 export { BooksTable } from "./books-table"
 export { StatisticsSidebar } from "./statistics-sidebar"
+export { BookFormDialog } from "./book-form-dialog"
 
 // Admin Components - Orders Management
 export { OrderSearchFilter } from "./order-search-filter"
@@ -36,6 +37,14 @@ export { UsersTable } from "./users-table"
 export { UsersCardView } from "./users-card-view"
 export { UsersPageHeader } from "./users-page-header"
 export { UsersStats } from "./users-stats"
+export { AddUserModal } from "./add-user-modal"
+
+// Admin Components - News Management
+export { NewsStats } from "./news-stats"
+export { NewsCategoryChart } from "./news-category-chart"
+export { TopViewedNewsChart } from "./top-viewed-news-chart"
+export { ViewsTrendChart } from "./views-trend-chart"
+export { FeaturedNewsList } from "./featured-news-list"
 
 // Admin Components - Shared Layout
 export { AdminSidebar } from "./sidebar"
