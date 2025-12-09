@@ -36,14 +36,14 @@ class RevenueStatisticsService {
         ? { startDate: period.startDate, endDate: period.endDate }
         : this.getDefaultDateRange();
 
-      // Fetch user statistics
-      const userStats = await usersService.getUserStatistics();
+      // Fetch user statistics với date range
+      const userStats = await usersService.getUserStatistics(dateRange.startDate, dateRange.endDate);
 
-      // Fetch orders by status
-      const ordersByStatus = await this.getOrdersByStatus();
+      // Fetch orders by status với date range
+      const ordersByStatus = await this.getOrdersByStatus(dateRange.startDate, dateRange.endDate);
 
-      // Fetch total revenue
-      const totalRevenue = await ordersService.getTotalRevenue();
+      // Fetch total revenue với date range
+      const totalRevenue = await ordersService.getTotalRevenue(dateRange.startDate, dateRange.endDate);
 
       return {
         userStats,
@@ -63,7 +63,7 @@ class RevenueStatisticsService {
   /**
    * Get orders count by status
    */
-  private async getOrdersByStatus(): Promise<Record<OrderStatus, number>> {
+  private async getOrdersByStatus(startDate?: string, endDate?: string): Promise<Record<OrderStatus, number>> {
     try {
       const statuses: OrderStatus[] = [
         "PENDING",
@@ -85,11 +85,11 @@ class RevenueStatisticsService {
         COMPLETED: 0,
       };
 
-      // Fetch orders for each status
+      // Fetch orders for each status với date range
       await Promise.all(
         statuses.map(async (status) => {
           try {
-            const orders = await ordersService.getOrdersByStatus(status);
+            const orders = await ordersService.getOrdersByStatus(status, startDate, endDate);
             ordersByStatus[status] = orders.length;
           } catch (error) {
             console.warn(`Failed to fetch orders for status ${status}:`, error);

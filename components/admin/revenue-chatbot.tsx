@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn, cleanMarkdown } from "@/lib/utils";
 import { chatService } from "@/lib/services/chat.service";
 import { revenueStatisticsService, RevenueStatisticsData } from "@/lib/services/revenue-statistics.service";
 import { reportExportService } from "@/lib/services/report-export.service";
@@ -203,15 +203,16 @@ export function RevenueChatbot() {
         }
 
         // Add AI report message
+        const cleanedResponse = cleanMarkdown(response.response);
         const reportMessage: Message = {
           id: `report-${Date.now()}`,
-          text: response.response,
+          text: cleanedResponse,
           isUser: false,
           timestamp: new Date(),
         };
 
         setMessages((prev) => [...prev, reportMessage]);
-        setCurrentReport(response.response);
+        setCurrentReport(cleanedResponse);
         // Save report data for export
         setCurrentReportData({
           statistics: statsData,
@@ -409,7 +410,7 @@ Hãy tạo báo cáo chi tiết, dễ hiểu và có cấu trúc rõ ràng.`;
 
         const botMessage: Message = {
           id: Date.now().toString() + "bot",
-          text: response.response,
+          text: cleanMarkdown(response.response),
           isUser: false,
           timestamp: new Date(),
         };

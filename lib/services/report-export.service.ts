@@ -5,6 +5,7 @@
  */
 
 import { RevenueStatisticsData } from "./revenue-statistics.service";
+import { cleanMarkdown } from "../utils";
 
 export interface ReportData {
   statistics: RevenueStatisticsData;
@@ -78,7 +79,8 @@ class ReportExportService {
       
       // Phân tích AI
       csvContent += "=== PHÂN TÍCH AI ===\n";
-      const aiLines = data.aiReportText.split("\n").filter((line) => line.trim());
+      const cleanedAiText = cleanMarkdown(data.aiReportText);
+      const aiLines = cleanedAiText.split("\n").filter((line) => line.trim());
       aiLines.forEach((line) => {
         csvContent += `"${line.replace(/"/g, '""')}"\n`;
       });
@@ -336,7 +338,7 @@ class ReportExportService {
 
   <div class="section">
     <div class="section-title">4. PHÂN TÍCH AI</div>
-    <div class="ai-analysis">${data.aiReportText.replace(/\n/g, "<br>")}</div>
+    <div class="ai-analysis">${cleanMarkdown(data.aiReportText).replace(/\n/g, "<br>")}</div>
   </div>
 
   <div class="footer">
