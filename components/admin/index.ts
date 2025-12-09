@@ -39,6 +39,13 @@ export { UsersPageHeader } from "./users-page-header"
 export { UsersStats } from "./users-stats"
 export { AddUserModal } from "./add-user-modal"
 
+// Admin Components - News Management
+export { NewsStats } from "./news-stats"
+export { NewsCategoryChart } from "./news-category-chart"
+export { TopViewedNewsChart } from "./top-viewed-news-chart"
+export { ViewsTrendChart } from "./views-trend-chart"
+export { FeaturedNewsList } from "./featured-news-list"
+
 // Admin Components - Shared Layout
 export { AdminSidebar } from "./sidebar"
 export { PageHeader } from "./page-header"

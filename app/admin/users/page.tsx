@@ -52,27 +52,13 @@ export default function AdminUsersPage() {
       }
 
       // Call API
-      const response = await usersService.createUser(requestData)
-
-      toast.success("Thêm người dùng thành công!")
+      await usersService.createUser(requestData)
 
       // Refresh user list
       await userActions.refreshUsers()
     } catch (error: any) {
-      // Extract error message from Backend response
-      let errorMessage = "Không thể thêm người dùng"
-
-      // Backend trả về: {code: 2013/2014, message: "...", result: null}
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error
-      } else if (error.message) {
-        errorMessage = error.message
-      }
-
-      toast.error(errorMessage)
-      throw error // Re-throw to keep modal open
+      // Re-throw to let modal handle the error display
+      throw error
     }
   }
 
