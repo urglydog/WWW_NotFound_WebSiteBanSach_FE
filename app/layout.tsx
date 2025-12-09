@@ -8,6 +8,7 @@ import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartSidebar } from "@/components/cart/cart-sidebar";
 import { ChatbotFloatingButton } from "@/components/chatbot/chatbot-floating-button";
+import { MiniGameChat } from "@/components/minigame/minigame-chat";
 import "./globals.css";
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -48,17 +49,18 @@ export default function RootLayout({
       </head>
       <body className={`font-sans antialiased`}>
         <AuthProvider>
-          <ChatbotFloatingButton/>
           <OrderProvider>
             <CartProvider>
               {children}
               <CartSidebar />
+              <ChatbotFloatingButton />
+              <MiniGameChat />
               <Toaster />
             </CartProvider>
           </OrderProvider>
-        </AuthProvider >
+        </AuthProvider>
         <Analytics />
-      </body >
-    </html >
+      </body>
+    </html>
   );
 }
