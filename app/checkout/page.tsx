@@ -103,7 +103,11 @@ export default function CheckoutPage() {
       // Call shipment service
       const response = await shipmentService.calculateShippingFee(
         address.districtId,
-        address.wardCode
+        address.wardCode,
+        {
+          totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+          subtotal: items.reduce((sum, item) => sum + ((item.bookDiscountPrice ?? item.bookPrice) * item.quantity), 0)
+        }
       )
       setShippingInfo(response)
       setShippingFee(response.totalFee)

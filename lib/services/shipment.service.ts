@@ -29,6 +29,11 @@ export interface Ward {
 export interface CalculateShippingRequest {
   toDistrictId: number
   toWardCode: string
+  length?: number // Default 20
+  width?: number // Default 15
+  height: number
+  weight: number
+  insuranceValue: number
 }
 
 export interface CalculateShippingResponse {
@@ -128,16 +133,35 @@ export const shipmentService = {
    */
   async calculateShippingFee(
     toDistrictId: number,
-    toWardCode: string
+    toWardCode: string,
+    itemsDetails: {
+      totalItems: number,
+      subtotal: number
+    }
   ): Promise<CalculateShippingResponse> {
     try {
-      console.log("[Shipment Service] Calculating shipping fee for:", { toDistrictId, toWardCode })
+      // Logic from requirement: 
+      // Weight: 200g per book
+      // Height: 1cm per book
+      // Length: 20cm (default)
+      // Width: 15cm (default)
+      // Insurance: Subtotal
+
+      const request: CalculateShippingRequest = {
+        toDistrictId,
+        toWardCode,
+        height: itemsDetails.totalItems * 1, // 1cm per book
+        weight: itemsDetails.totalItems * 300, // 200g per book
+        length: 20,
+        width: 15,
+        insuranceValue: itemsDetails.subtotal
+      }
+
+      console.log("[Shipment Service] Calculating shipping fee request:", request)
+
       const response = await apiClient.post<CalculateShippingResponse>(
         "/shipment/customer/calculate",
-        {
-          toDistrictId,
-          toWardCode,
-        }
+        request
       )
       console.log("[Shipment Service] Shipping fee calculated:", response)
       return response
