@@ -52,6 +52,7 @@ export function RevenueChatbot() {
   } | null>(null);
   const [hasShownProactiveMessage, setHasShownProactiveMessage] = useState(false);
   const [hasProactiveSuggestion, setHasProactiveSuggestion] = useState(false);
+  const [isWaitingForPeriod, setIsWaitingForPeriod] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -300,22 +301,11 @@ Hãy tạo báo cáo chi tiết, dễ hiểu và có cấu trúc rõ ràng.`;
     setLoading(true);
 
     try {
-      // Check if user wants to generate report
-      const reportKeywords = [
-        "báo cáo",
-        "thống kê",
-        "report",
-        "tạo báo cáo",
-        "xuất báo cáo",
-      ];
-      const wantsReport = reportKeywords.some((keyword) =>
-        currentInput.toLowerCase().includes(keyword)
-      );
-
-      if (wantsReport) {
-        // Extract period from user input
+      const inputLower = currentInput.toLowerCase();
+      
+      // Check if user is responding to period question
+      if (isWaitingForPeriod) {
         let period: ReportPeriod | undefined;
-        const inputLower = currentInput.toLowerCase();
 
         if (inputLower.includes("ngày") || inputLower.includes("hôm nay")) {
           const today = new Date();
@@ -342,27 +332,72 @@ Hãy tạo báo cáo chi tiết, dễ hiểu và có cấu trúc rõ ràng.`;
           };
         } else if (
           inputLower.includes("tháng") ||
-          inputLower.includes("month")
+          inputLower.includes("month") ||
+          inputLower.includes("năm") ||
+          inputLower.includes("year")
         ) {
-          const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          const monthEnd = new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            0
-          );
-          period = {
-            type: "month",
-            startDate: monthStart.toISOString().split("T")[0],
-            endDate: monthEnd.toISOString().split("T")[0],
-            label: "tháng này",
-          };
+          // Handle "tháng này", "tháng trước", "năm này", etc.
+          if (inputLower.includes("tháng này") || inputLower.includes("tháng hiện tại")) {
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              0
+            );
+            period = {
+              type: "month",
+              startDate: monthStart.toISOString().split("T")[0],
+              endDate: monthEnd.toISOString().split("T")[0],
+              label: "tháng này",
+            };
+          } else if (inputLower.includes("tháng trước")) {
+            const now = new Date();
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            period = {
+              type: "month",
+              startDate: lastMonth.toISOString().split("T")[0],
+              endDate: lastMonthEnd.toISOString().split("T")[0],
+              label: "tháng trước",
+            };
+          } else if (inputLower.includes("năm này") || inputLower.includes("năm hiện tại")) {
+            const now = new Date();
+            const yearStart = new Date(now.getFullYear(), 0, 1);
+            const yearEnd = new Date(now.getFullYear(), 11, 31);
+            period = {
+              type: "month",
+              startDate: yearStart.toISOString().split("T")[0],
+              endDate: yearEnd.toISOString().split("T")[0],
+              label: "năm này",
+            };
+          } else {
+            // Default to current month if just "tháng"
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              0
+            );
+            period = {
+              type: "month",
+              startDate: monthStart.toISOString().split("T")[0],
+              endDate: monthEnd.toISOString().split("T")[0],
+              label: "tháng này",
+            };
+          }
+        }
+
+        if (period) {
+          setIsWaitingForPeriod(false);
+          await generateReport(period);
         } else {
-          // Unclear request (3a) - ask for clarification
+          // Still unclear, ask again
           const clarificationMessage: Message = {
             id: `clarify-${Date.now()}`,
             text:
-              "Bạn muốn báo cáo theo khoảng thời gian nào? (Ví dụ: hôm nay, tuần này, tháng này, hoặc tháng trước)",
+              "Vui lòng chọn một trong các tùy chọn: hôm nay, tuần này, tháng này, tháng trước, hoặc năm này.",
             isUser: false,
             timestamp: new Date(),
           };
@@ -370,33 +405,125 @@ Hãy tạo báo cáo chi tiết, dễ hiểu và có cấu trúc rõ ràng.`;
           setLoading(false);
           return;
         }
+        return;
+      }
 
-        // If period not determined, use default (5a)
-        if (!period) {
-          const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          const monthEnd = new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            0
-          );
+      // Check if user wants to generate report
+      const reportKeywords = [
+        "báo cáo",
+        "thống kê",
+        "report",
+        "tạo báo cáo",
+        "xuất báo cáo",
+        "doanh thu",
+      ];
+      const wantsReport = reportKeywords.some((keyword) =>
+        inputLower.includes(keyword)
+      );
+
+      if (wantsReport) {
+        // Extract period from user input
+        let period: ReportPeriod | undefined;
+
+        if (inputLower.includes("ngày") || inputLower.includes("hôm nay")) {
+          const today = new Date();
           period = {
-            type: "month",
-            startDate: monthStart.toISOString().split("T")[0],
-            endDate: monthEnd.toISOString().split("T")[0],
-            label: "tháng hiện tại",
+            type: "day",
+            startDate: today.toISOString().split("T")[0],
+            endDate: today.toISOString().split("T")[0],
+            label: "hôm nay",
           };
+        } else if (
+          inputLower.includes("tuần") ||
+          inputLower.includes("week")
+        ) {
+          const now = new Date();
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - now.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          period = {
+            type: "week",
+            startDate: weekStart.toISOString().split("T")[0],
+            endDate: weekEnd.toISOString().split("T")[0],
+            label: "tuần này",
+          };
+        } else if (
+          inputLower.includes("tháng") ||
+          inputLower.includes("month") ||
+          inputLower.includes("năm") ||
+          inputLower.includes("year")
+        ) {
+          // Handle "tháng này", "tháng trước", "năm này", etc.
+          if (inputLower.includes("tháng này") || inputLower.includes("tháng hiện tại")) {
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              0
+            );
+            period = {
+              type: "month",
+              startDate: monthStart.toISOString().split("T")[0],
+              endDate: monthEnd.toISOString().split("T")[0],
+              label: "tháng này",
+            };
+          } else if (inputLower.includes("tháng trước")) {
+            const now = new Date();
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            period = {
+              type: "month",
+              startDate: lastMonth.toISOString().split("T")[0],
+              endDate: lastMonthEnd.toISOString().split("T")[0],
+              label: "tháng trước",
+            };
+          } else if (inputLower.includes("năm này") || inputLower.includes("năm hiện tại")) {
+            const now = new Date();
+            const yearStart = new Date(now.getFullYear(), 0, 1);
+            const yearEnd = new Date(now.getFullYear(), 11, 31);
+            period = {
+              type: "month",
+              startDate: yearStart.toISOString().split("T")[0],
+              endDate: yearEnd.toISOString().split("T")[0],
+              label: "năm này",
+            };
+          } else {
+            // Default to current month if just "tháng"
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              0
+            );
+            period = {
+              type: "month",
+              startDate: monthStart.toISOString().split("T")[0],
+              endDate: monthEnd.toISOString().split("T")[0],
+              label: "tháng này",
+            };
+          }
+        }
 
-          const defaultMessage: Message = {
-            id: `default-${Date.now()}`,
-            text: `Tôi sẽ tạo báo cáo cho ${period.label} (mặc định).`,
+        if (period) {
+          // Period found, generate report
+          await generateReport(period);
+        } else {
+          // No period specified, ask for clarification
+          setIsWaitingForPeriod(true);
+          const clarificationMessage: Message = {
+            id: `clarify-${Date.now()}`,
+            text:
+              "Bạn muốn báo cáo theo khoảng thời gian nào? (Ví dụ: hôm nay, tuần này, tháng này, tháng trước, hoặc năm này)",
             isUser: false,
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, defaultMessage]);
+          setMessages((prev) => [...prev, clarificationMessage]);
+          setLoading(false);
+          return;
         }
-
-        await generateReport(period);
       } else {
         // Regular chat
         const response = await chatService.sendMessage({
@@ -430,7 +557,7 @@ Hãy tạo báo cáo chi tiết, dễ hiểu và có cấu trúc rõ ràng.`;
     } finally {
       setLoading(false);
     }
-  }, [input, loading, sessionId, generateReport]);
+  }, [input, loading, sessionId, generateReport, isWaitingForPeriod]);
 
   // Export report to file
   const exportReport = useCallback(
