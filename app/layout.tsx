@@ -6,6 +6,7 @@ import { CartProvider } from "@/lib/cart-context"
 import { AuthProvider } from "@/lib/auth-context"
 import { OrderProvider } from "@/lib/order-context"
 import { CartSidebar } from "@/components/cart/cart-sidebar"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -30,12 +31,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
+      <head>
+        <script src="https://cdn.ckbox.io/ckbox/2.9.2/ckbox.js" crossOrigin="anonymous"></script>
+        <script src="https://cdn.ckbox.io/ckbox/2.9.2/translations/vi.js" crossOrigin="anonymous"></script>
+      </head>
       <body className={`font-sans antialiased`}>
         <AuthProvider>
           <OrderProvider>
             <CartProvider>
               {children}
               <CartSidebar />
+              <Toaster />
             </CartProvider>
           </OrderProvider>
         </AuthProvider>

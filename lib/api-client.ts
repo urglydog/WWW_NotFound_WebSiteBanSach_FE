@@ -5,11 +5,6 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 
-// Debug: Log the API URL
-if (typeof window !== "undefined") {
-  console.log("API_BASE_URL:", API_BASE_URL)
-}
-
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -37,7 +32,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
-    
+
     // Get token from localStorage if exists
     const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null
 
