@@ -99,7 +99,9 @@ import "ckeditor5/ckeditor5.css"
 import "ckeditor5-premium-features/ckeditor5-premium-features.css"
 import "./ckeditor-styles.css"
 
-const LICENSE_KEY = 'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3NjY0NDc5OTksImp0aSI6IjExNTBlNTM1LTQwODgtNGRjYy1iZmI5LTgzNGExYTllMGM2OSIsInVzYWdlRW5kcG9pbnQiOiJodHRwczovL3Byb3h5LWV2ZW50LmNrZWRpdG9yLmNvbSIsImRpc3RyaWJ1dGlvbkNoYW5uZWwiOlsiY2xvdWQiLCJkcnVwYWwiLCJzaCJdLCJ3aGl0ZUxhYmVsIjp0cnVlLCJsaWNlbnNlVHlwZSI6InRyaWFsIiwiZmVhdHVyZXMiOlsiKiJdLCJ2YyI6IjNmZjdkZTA5In0.Q_lD27rSEO5mfVSAxlv0SmMsORWRMMJyQF2VSrXoFaqfipgLZUYuW8ufZ8ufgc-r41Fkc_AoYpjwwjCcCZaayw'
+const LICENSE_KEY = process.env.NEXT_API_NEW || ''
+const CLOUDSERVICE_TOKEN_URL = process.env.CLOUDSERVICE || ''
+const WEBSOCKET_URL = process.env.WEBSOCKETURL || ''
 
 const DEFAULT_HEX_COLORS = [
   { color: '#000000', label: 'Black' },
@@ -324,8 +326,8 @@ export default function CKEditorComponent({ value, onChange }: CKEditorComponent
           'numberedList'
         ],
         cloudServices: {
-          tokenUrl: 'https://q2f_l0zfa5q1.cke-cs.com/token/dev/215c28b191a3fa5245ef205a156347ea57dafc4878d576f40e637fc003f5?limit=10',
-          webSocketUrl: 'wss://q2f_l0zfa5q1.cke-cs.com/ws'
+          tokenUrl: CLOUDSERVICE_TOKEN_URL,
+          webSocketUrl: WEBSOCKET_URL
         },
         collaboration: {
           channelId: 'news-editor-' + Math.random().toString(36).substring(7)
