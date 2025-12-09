@@ -49,6 +49,8 @@ export default function AccountPage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [timeFilter, setTimeFilter] = useState("ALL")
   // // Fetch user profile from API - fetch khi user có và chưa fetch
   // Fetch user profile from API
   const fetchUserProfile = async () => {
@@ -175,13 +177,58 @@ export default function AccountPage() {
     try {
       setOrdersLoading(true)
       const data = await ordersService.getMyOrders()
-      setOrders(data)
+      // Sort by newest first
+      const sortedData = data.sort((a, b) =>
+        new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+      )
+      setOrders(sortedData)
     } catch (error) {
       console.error("Failed to fetch orders:", error)
     } finally {
       setOrdersLoading(false)
     }
   }
+
+  const getFilteredOrders = () => {
+    return orders.filter(order => {
+      // 1. Status Filter
+      if (statusFilter !== "ALL" && order.status !== statusFilter) {
+        return false
+      }
+
+      // 2. Time Filter
+      if (timeFilter !== "ALL") {
+        const orderDate = new Date(order.orderDate)
+        const now = new Date()
+
+        if (timeFilter === "30_DAYS") {
+          const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
+          if (orderDate < thirtyDaysAgo) return false
+        } else if (timeFilter === "6_MONTHS") {
+          const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6))
+          if (orderDate < sixMonthsAgo) return false
+        } else if (timeFilter === "THIS_YEAR") {
+          const startOfYear = new Date(new Date().getFullYear(), 0, 1)
+          if (orderDate < startOfYear) return false
+        }
+      }
+
+      return true
+    })
+  }
+
+  const filteredOrders = getFilteredOrders()
+
+  const filterTabs = [
+    { id: "ALL", label: "Tất cả" },
+    { id: "PENDING", label: "Chờ xác nhận" },
+    { id: "CONFIRMED", label: "Đã xác nhận" },
+    { id: "PROCESSING", label: "Đang xử lý" },
+    { id: "SHIPPED", label: "Đang giao" },
+    { id: "DELIVERED", label: "Đã giao" },
+    { id: "COMPLETED", label: "Hoàn thành" },
+    { id: "CANCELLED", label: "Đã hủy" },
+  ]
 
   const loadAddresses = async () => {
     try {
@@ -484,26 +531,78 @@ export default function AccountPage() {
                     Đơn hàng của tôi
                   </h2>
 
+                  {/* Filters Section */}
+                  <div className="space-y-4 mb-6">
+                    {/* Status Tabs - Scrollable on mobile */}
+                    <div className="flex overflow-x-auto pb-2 gap-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                      {filterTabs.map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setStatusFilter(tab.id)}
+                          className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${statusFilter === tab.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Time Filter & Stats */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">Thời gian:</span>
+                        <select
+                          value={timeFilter}
+                          onChange={(e) => setTimeFilter(e.target.value)}
+                          className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                          <option value="ALL">Toàn bộ thời gian</option>
+                          <option value="30_DAYS">30 ngày gần đây</option>
+                          <option value="6_MONTHS">6 tháng gần đây</option>
+                          <option value="THIS_YEAR">Năm nay ({new Date().getFullYear()})</option>
+                        </select>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground">
+                        Hiển thị {filteredOrders.length} đơn hàng
+                      </div>
+                    </div>
+                  </div>
+
                   {ordersLoading ? (
                     <div className="text-center py-12">
                       <p className="text-muted-foreground">Đang tải đơn hàng...</p>
                     </div>
-                  ) : orders.length === 0 ? (
+                  ) : filteredOrders.length === 0 ? (
                     <div className="text-center py-12">
                       <ShoppingBag
                         size={48}
                         className="mx-auto text-muted-foreground mb-4 opacity-50"
                       />
                       <p className="text-muted-foreground mb-4">
-                        Chưa có đơn hàng nào
+                        Không tìm thấy đơn hàng nào
                       </p>
-                      <Link href="/products">
-                        <Button>Mua sắm ngay</Button>
-                      </Link>
+                      {statusFilter !== "ALL" || timeFilter !== "ALL" ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setStatusFilter("ALL")
+                            setTimeFilter("ALL")
+                          }}
+                        >
+                          Xóa bộ lọc
+                        </Button>
+                      ) : (
+                        <Link href="/products">
+                          <Button>Mua sắm ngay</Button>
+                        </Link>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {orders.map((order) => {
+                      {filteredOrders.map((order) => {
                         const statusConfig: Record<string, { label: string; color: string }> = {
                           PENDING: { label: "Chờ xác nhận", color: "bg-yellow-100 text-yellow-700" },
                           CONFIRMED: { label: "Đã xác nhận", color: "bg-blue-100 text-blue-700" },
