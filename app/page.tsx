@@ -10,8 +10,8 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { authService } from "@/lib/services/auth.service"
 import { usersService } from "@/lib/services/users.service"
-import { booksService, Book, CategoryWithBooks } from "@/lib/services/books.service"
-import { categoriesService, Category } from "@/lib/services/categories.service"
+import { booksService, Book } from "@/lib/services/books.service"
+import { categoriesService, CategoryWithSampleBook } from "@/lib/services/categories.service"
 import { message } from "antd"
 
 export default function Home() {
@@ -21,21 +21,21 @@ export default function Home() {
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
   const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
   const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
-  const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
+  const [categoriesWithSampleBooks, setCategoriesWithSampleBooks] = useState<CategoryWithSampleBook[]>([])
   const [literatureBooks, setLiteratureBooks] = useState<Book[]>([])
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const [bestSellers, suggested, categoriesWithBooks, literatureResponse] = await Promise.all([
+        const [bestSellers, suggested, categoriesWithSamples, literatureResponse] = await Promise.all([
           booksService.getBestSellers(4),
           booksService.getSuggestedBooks(4),
-          booksService.getBooksByPopularCategories(3),
-          booksService.getBooks({ category: "Văn học", pageSize: 4 })
+          categoriesService.getCategoriesWithSampleBook(),
+          booksService.getBooks({ danhMuc: ["Văn học"], size: 4 })
         ])
         setBestSellingBooks(bestSellers)
         setSuggestedBooks(suggested)
-        setPopularCategoriesWithBooks(categoriesWithBooks)
+        setCategoriesWithSampleBooks(categoriesWithSamples)
         setLiteratureBooks(literatureResponse.content)
       } catch (error) {
         console.error("Failed to fetch books:", error)
@@ -311,23 +311,17 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-              {popularCategoriesWithBooks.length > 0 && (
-                popularCategoriesWithBooks.slice(0, 3).map((item) => (
-                  <Link key={item.category.id} href={`/categories/${item.category.id}`}>
+              {categoriesWithSampleBooks.length > 0 && (
+                categoriesWithSampleBooks.slice(0, 3).map((item) => (
+                  <Link key={item.id} href={`/categories/${item.id}`}>
                     <div className="group cursor-pointer">
                       <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
                         <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
                           {(() => {
-                            const bookImage = item.books && item.books.length > 0
-                              ? (item.books[0].mainImageUrl || (item.books[0].imageUrls && item.books[0].imageUrls[0]))
-                              : null;
+                            const bookImage = item.sampleBook?.imageUrls?.[0];
 
                             if (bookImage) {
-                              return <img src={bookImage} alt={item.category.name} className="h-full w-full object-cover" />;
-                            }
-
-                            if (item.category.image) {
-                              return <img src={item.category.image} alt={item.category.name} className="h-full w-full object-cover" />;
+                              return <img src={bookImage} alt={item.name} className="h-full w-full object-cover" />;
                             }
 
                             return <span className="text-4xl sm:text-5xl">📖</span>;
@@ -335,10 +329,10 @@ export default function Home() {
                         </div>
                       </div>
                       <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
-                        {item.category.name}
+                        {item.name}
                       </h3>
                       <p className="text-sm text-muted-foreground sm:text-base">
-                        {item.category.description || `Khám phá ${item.category.name}`}
+                        {item.description || `Khám phá ${item.name}`}
                       </p>
                     </div>
                   </Link>
