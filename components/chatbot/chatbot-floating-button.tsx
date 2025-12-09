@@ -254,6 +254,7 @@ export function ChatbotFloatingButton() {
     }
   };
 
+
   return (
     <>
       {/* Floating Button */}
