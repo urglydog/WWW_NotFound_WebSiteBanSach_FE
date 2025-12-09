@@ -61,32 +61,32 @@ export function PrizeModal({ open, onClose, prize }: PrizeModalProps) {
             </>
           ) : (
             <>
-              <p className="text-lg text-center mb-2 text-muted-foreground">Bạn đã nhận được</p>
+          <p className="text-lg text-center mb-2 text-muted-foreground">Bạn đã nhận được</p>
 
-              <div className="bg-primary/10 rounded-xl p-4 mb-4 w-full">
-                <p className="text-xl font-bold text-center text-primary">{prize.label}</p>
-                <p className="text-sm text-center text-muted-foreground mt-1">{prize.value}</p>
-              </div>
+          <div className="bg-primary/10 rounded-xl p-4 mb-4 w-full">
+            <p className="text-xl font-bold text-center text-primary">{prize.label}</p>
+            <p className="text-sm text-center text-muted-foreground mt-1">{prize.value}</p>
+          </div>
 
-              <div className="w-full">
-                <p className="text-sm text-muted-foreground mb-2 text-center">Mã voucher của bạn:</p>
-                <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
-                  <code className="flex-1 text-center font-mono text-lg font-bold text-foreground tracking-wider">
-                    {voucherCode}
-                  </code>
-                  <Button variant="outline" size="icon" onClick={copyCode} className="shrink-0 bg-transparent">
-                    {copied ? <Check className="h-4 w-4 text-secondary" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-4 text-center">
-                Voucher có hiệu lực trong 30 ngày kể từ ngày nhận
-              </p>
-
-              <Button onClick={onClose} className="mt-6 w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                Tiếp tục mua sắm
+          <div className="w-full">
+            <p className="text-sm text-muted-foreground mb-2 text-center">Mã voucher của bạn:</p>
+            <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
+              <code className="flex-1 text-center font-mono text-lg font-bold text-foreground tracking-wider">
+                {voucherCode}
+              </code>
+              <Button variant="outline" size="icon" onClick={copyCode} className="shrink-0 bg-transparent">
+                {copied ? <Check className="h-4 w-4 text-secondary" /> : <Copy className="h-4 w-4" />}
               </Button>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-4 text-center">
+            Voucher có hiệu lực trong 30 ngày kể từ ngày nhận
+          </p>
+
+          <Button onClick={onClose} className="mt-6 w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+            Tiếp tục mua sắm
+          </Button>
             </>
           )}
         </div>

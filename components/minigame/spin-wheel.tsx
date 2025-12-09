@@ -17,6 +17,8 @@ interface SpinWheelProps {
   segments?: WheelSegment[]
   disabled?: boolean
   spinsRemaining?: number
+  unauthenticated?: boolean
+  onLoginRedirect?: () => void
   onSpinComplete: (prize: WheelSegment) => void
 }
 
@@ -25,6 +27,8 @@ export function SpinWheel({
   segments = [],
   disabled = false,
   spinsRemaining = 0,
+  unauthenticated = false,
+  onLoginRedirect,
 }: SpinWheelProps) {
   const [rotation, setRotation] = useState(0)
   const [isSpinning, setIsSpinning] = useState(false)
@@ -175,7 +179,7 @@ export function SpinWheel({
 
       {/* Spin button */}
       <Button
-        onClick={spin}
+        onClick={unauthenticated ? onLoginRedirect : spin}
         disabled={isSpinning || disabled || segments.length === 0}
         size="lg"
         className="mt-6 px-8 py-6 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
@@ -185,6 +189,8 @@ export function SpinWheel({
             <Sparkles className="mr-2 h-5 w-5 animate-spin" />
             Đang quay...
           </>
+        ) : unauthenticated ? (
+          "Đăng nhập để được quay"
         ) : segments.length === 0 ? (
           "Đang tải khuyến mãi..."
         ) : (
