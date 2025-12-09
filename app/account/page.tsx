@@ -7,9 +7,10 @@ import { useAuth, type User } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User as UserIcon, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2 } from "lucide-react";
+import { LogOut, User as UserIcon, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usersService } from "@/lib/services/users.service";
+import { ordersService, OrderResponse } from "@/lib/services/orders.service";
 import Image from "next/image";
 
 interface UserProfile {
@@ -164,7 +165,22 @@ export default function AccountPage() {
     if (activeTab === "addresses" && user) {
       loadAddresses();
     }
+    if (activeTab === "orders" && user) {
+      loadOrders();
+    }
   }, [activeTab, user]);
+
+  const loadOrders = async () => {
+    try {
+      setOrdersLoading(true)
+      const data = await ordersService.getMyOrders()
+      setOrders(data)
+    } catch (error) {
+      console.error("Failed to fetch orders:", error)
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
 
   const loadAddresses = async () => {
     try {
@@ -466,15 +482,82 @@ export default function AccountPage() {
                   <h2 className="text-2xl font-bold text-foreground mb-6">
                     Đơn hàng của tôi
                   </h2>
-                  <div className="text-center py-12">
-                    <ShoppingBag
-                      size={48}
-                      className="mx-auto text-muted-foreground mb-4 opacity-50"
-                    />
-                    <p className="text-muted-foreground">
-                      Chưa có đơn hàng nào
-                    </p>
-                  </div>
+
+                  {ordersLoading ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">Đang tải đơn hàng...</p>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ShoppingBag
+                        size={48}
+                        className="mx-auto text-muted-foreground mb-4 opacity-50"
+                      />
+                      <p className="text-muted-foreground mb-4">
+                        Chưa có đơn hàng nào
+                      </p>
+                      <Link href="/products">
+                        <Button>Mua sắm ngay</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orders.map((order) => {
+                        const statusConfig: Record<string, { label: string; color: string }> = {
+                          PENDING: { label: "Chờ xác nhận", color: "bg-yellow-100 text-yellow-700" },
+                          CONFIRMED: { label: "Đã xác nhận", color: "bg-blue-100 text-blue-700" },
+                          PROCESSING: { label: "Đang chuẩn bị", color: "bg-blue-100 text-blue-700" },
+                          SHIPPED: { label: "Đang giao", color: "bg-purple-100 text-purple-700" },
+                          DELIVERED: { label: "Đã giao", color: "bg-green-100 text-green-700" },
+                          CANCELLED: { label: "Đã hủy", color: "bg-red-100 text-red-700" },
+                          COMPLETED: { label: "Hoàn thành", color: "bg-green-100 text-green-700" },
+                        }
+                        const config = statusConfig[order.status] || { label: order.status, color: "bg-gray-100 text-gray-700" }
+
+                        return (
+                          <Link key={order.id} href={`/account/orders/${order.id}`}>
+                            <div className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition cursor-pointer">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <h3 className="font-bold text-lg text-foreground">Đơn hàng #{order.orderCode || order.id.substring(0, 8)}</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(order.orderDate).toLocaleDateString("vi-VN")}
+                                  </p>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
+                                  {config.label}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Số lượng sách</p>
+                                  <p className="font-semibold text-foreground">{order.items.length}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Tổng tiền</p>
+                                  <p className="font-semibold text-primary text-lg">{order.total.toLocaleString("vi-VN")}₫</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Phương thức thanh toán</p>
+                                  <p className="font-semibold text-foreground">
+                                    {order.paymentMethod}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-primary">
+                                  <span className="text-sm font-medium">Xem chi tiết</span>
+                                  <ChevronRight size={16} />
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
