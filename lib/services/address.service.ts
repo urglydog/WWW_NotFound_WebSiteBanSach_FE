@@ -16,6 +16,8 @@ export interface AddressResponse {
 }
 export type Address = AddressResponse
 
+export type Address = AddressResponse;
+
 export interface CreateAddressRequest {
     recipientName: string
     phoneNumber: string
