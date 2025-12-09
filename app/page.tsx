@@ -31,7 +31,7 @@ export default function Home() {
           booksService.getBestSellers(4),
           booksService.getSuggestedBooks(4),
           categoriesService.getCategoriesWithSampleBook(),
-          booksService.getBooks({ category: "Văn học", pageSize: 4 })
+          booksService.getBooks({ danhMuc: ["Văn học"], size: 4 })
         ])
         setBestSellingBooks(bestSellers)
         setSuggestedBooks(suggested)

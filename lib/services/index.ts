@@ -16,6 +16,7 @@ export * from "./wishlist.service"
 export * from "./address.service"
 export * from "./shipment.service"
 export * from "./chat.service"
+export * from "./dashboard.service"
 
 
 // Re-export apiClient for direct usage
