@@ -2,11 +2,12 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { ordersService, OrderResponse } from "@/lib/services/orders.service";
+import { reviewsService } from "@/lib/services/reviews.service";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ChevronLeft, Printer, Download, Loader2 } from "lucide-react";
+import { ChevronLeft, Printer, Download, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, use } from "react";
 import { toast } from "sonner";
@@ -86,6 +87,9 @@ export default function OrderDetailPage({
   const router = useRouter();
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ratings, setRatings] = useState<{ [key: number]: number }>({});
+  const [reviews, setReviews] = useState<{ [key: number]: string }>({});
+  const [submitting, setSubmitting] = useState<{ [key: number]: boolean }>({});
 
   // Unwrap params Promise
   const { id } = use(params);
@@ -343,6 +347,161 @@ export default function OrderDetailPage({
                 </div>
               </div>
 
+              {/* Review Section - Only show for COMPLETED orders */}
+              {order.status === "COMPLETED" && (
+                <div className="bg-card border border-border rounded-lg p-6 mt-8">
+                  <h2 className="font-bold text-foreground mb-4">
+                    Đánh giá đơn hàng
+                  </h2>
+                  <div className="space-y-4">
+                    {order.items.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex gap-4 py-4 border-b border-border last:border-0"
+                      >
+                        {/* Book Image */}
+                        {item.bookImageUrl && (
+                          <div className="relative w-16 h-20 flex-shrink-0 rounded overflow-hidden bg-muted">
+                            <img
+                              src={item.bookImageUrl}
+                              alt={item.bookTitle}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground mb-2">
+                            {item.bookTitle}
+                          </p>
+
+                          {/* Star Rating */}
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  type="button"
+                                  key={star}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setRatings((prev) => ({
+                                      ...prev,
+                                      [index]: star,
+                                    }));
+                                  }}
+                                  className="hover:scale-110 transition-transform focus:outline-none"
+                                >
+                                  <Star
+                                    className={`w-6 h-6 ${
+                                      star <= (ratings[index] || 0)
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {ratings[index]
+                                ? `${ratings[index]} sao`
+                                : "Chọn số sao"}
+                            </span>
+                          </div>
+
+                          {/* Review Text */}
+                          <textarea
+                            value={reviews[index] || ""}
+                            onChange={(e) => {
+                              setReviews((prev) => ({
+                                ...prev,
+                                [index]: e.target.value,
+                              }));
+                            }}
+                            placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..."
+                            className="w-full min-h-[100px] p-3 border border-border rounded-lg bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+
+                          <div className="flex justify-end mt-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={submitting[index]}
+                              className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                if (!ratings[index]) {
+                                  toast.error("Vui lòng chọn số sao đánh giá");
+                                  return;
+                                }
+                                if (
+                                  !reviews[index] ||
+                                  reviews[index].trim() === ""
+                                ) {
+                                  toast.error(
+                                    "Vui lòng nhập nội dung đánh giá"
+                                  );
+                                  return;
+                                }
+
+                                try {
+                                  setSubmitting((prev) => ({
+                                    ...prev,
+                                    [index]: true,
+                                  }));
+
+                                  await reviewsService.createReview({
+                                    bookId: item.bookId,
+                                    rating: ratings[index],
+                                    comment: reviews[index],
+                                  });
+
+                                  toast.success(
+                                    "Đánh giá của bạn đã được gửi!"
+                                  );
+
+                                  // Clear form after successful submission
+                                  setRatings((prev) => {
+                                    const newRatings = { ...prev };
+                                    delete newRatings[index];
+                                    return newRatings;
+                                  });
+                                  setReviews((prev) => {
+                                    const newReviews = { ...prev };
+                                    delete newReviews[index];
+                                    return newReviews;
+                                  });
+                                } catch (error: any) {
+                                  console.error(
+                                    "Failed to submit review:",
+                                    error
+                                  );
+                                  toast.error(
+                                    error.message ||
+                                      "Không thể gửi đánh giá. Vui lòng thử lại."
+                                  );
+                                } finally {
+                                  setSubmitting((prev) => ({
+                                    ...prev,
+                                    [index]: false,
+                                  }));
+                                }
+                              }}
+                            >
+                              {submitting[index]
+                                ? "Đang gửi..."
+                                : "Gửi đánh giá"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Tracking */}
               {/* Tracking number is not in OrderResponse yet, skipping */}
             </div>
@@ -370,14 +529,14 @@ export default function OrderDetailPage({
                       )}
                     </span>
                   </div>
-                  {order.taxAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Thuế:</span>
-                      <span className="font-medium">
-                        {order.taxAmount.toLocaleString("vi-VN")}₫
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Thuế:</span>
+                    <span className="font-medium">
+                      {order.taxAmount > 0
+                        ? `${order.taxAmount.toLocaleString("vi-VN")}₫`
+                        : "0₫"}
+                    </span>
+                  </div>
                   {order.discountAmount && order.discountAmount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>
