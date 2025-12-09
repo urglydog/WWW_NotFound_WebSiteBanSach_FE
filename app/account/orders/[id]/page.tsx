@@ -1,54 +1,119 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/lib/auth-context"
-import { ordersService, OrderResponse } from "@/lib/services/orders.service"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ChevronLeft, Printer, Download, Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context";
+import { ordersService, OrderResponse } from "@/lib/services/orders.service";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ChevronLeft, Printer, Download, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, use } from "react";
+import { toast } from "sonner";
 
 const statusSteps = [
-  { key: "PENDING", label: "Chờ xác nhận" },
-  { key: "CONFIRMED", label: "Đã xác nhận" },
-  { key: "PROCESSING", label: "Đang chuẩn bị" },
-  { key: "SHIPPED", label: "Đang giao" },
-  { key: "DELIVERED", label: "Đã giao" },
-]
+  {
+    key: "PENDING",
+    label: "Chờ xác nhận",
+  },
+  {
+    key: "CONFIRMED",
+    label: "Đã xác nhận",
+  },
+  {
+    key: "PROCESSING",
+    label: "Đang chuẩn bị",
+  },
+  {
+    key: "SHIPPED",
+    label: "Đang giao",
+  },
+  {
+    key: "COMPLETED",
+    label: "Hoàn thành",
+  },
+];
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const { user, isLoading: authLoading } = useAuth()
-  const router = useRouter()
-  const [order, setOrder] = useState<OrderResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+// Helper function to get status colors
+const getStatusColors = (stepKey: string) => {
+  switch (stepKey) {
+    case "PENDING":
+      return {
+        bg: "bg-yellow-100",
+        ring: "ring-yellow-300/50",
+        text: "text-yellow-700",
+      };
+    case "CONFIRMED":
+    case "PROCESSING":
+      return {
+        bg: "bg-blue-100",
+        ring: "ring-blue-300/50",
+        text: "text-blue-700",
+      };
+    case "SHIPPED":
+      return {
+        bg: "bg-purple-100",
+        ring: "ring-purple-300/50",
+        text: "text-purple-700",
+      };
+    case "COMPLETED":
+      return {
+        bg: "bg-green-100",
+        ring: "ring-green-300/50",
+        text: "text-green-700",
+      };
+    case "CANCELLED":
+      return {
+        bg: "bg-red-100",
+        ring: "ring-red-300/50",
+        text: "text-red-700",
+      };
+    default:
+      return {
+        bg: "bg-gray-100",
+        ring: "ring-gray-300/50",
+        text: "text-gray-700",
+      };
+  }
+};
+
+export default function OrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const [order, setOrder] = useState<OrderResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Unwrap params Promise
+  const { id } = use(params);
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
 
     if (user) {
-      fetchOrder()
+      fetchOrder();
     }
-  }, [user, authLoading, router, params.id])
+  }, [user, authLoading, router, id]);
 
   const fetchOrder = async () => {
     try {
-      setLoading(true)
-      const data = await ordersService.getOrderById(params.id)
-      setOrder(data)
+      setLoading(true);
+      const data = await ordersService.getOrderById(id);
+      setOrder(data);
     } catch (error) {
-      console.error("Failed to fetch order:", error)
-      toast.error("Không thể tải thông tin đơn hàng")
-      router.push("/account/orders")
+      console.error("Failed to fetch order:", error);
+      toast.error("Không thể tải thông tin đơn hàng");
+      router.push("/account/orders");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (authLoading || loading) {
     return (
@@ -59,12 +124,14 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         </main>
         <Footer />
       </div>
-    )
+    );
   }
 
-  if (!user || !order) return null
+  if (!user || !order) return null;
 
-  const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status)
+  const currentStepIndex = statusSteps.findIndex(
+    (step) => step.key === order.status
+  );
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -81,47 +148,77 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Đơn hàng #{order.orderCode || order.id.substring(0, 8)}</h1>
-                <p className="text-muted-foreground">{new Date(order.orderDate).toLocaleDateString("vi-VN")}</p>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Đơn hàng #{order.orderCode || order.id.substring(0, 8)}
+                </h1>
+                <p className="text-muted-foreground">
+                  {new Date(order.orderDate).toLocaleDateString("vi-VN")}
+                </p>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Printer size={18} className="mr-2" />
-                In
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download size={18} className="mr-2" />
-                Tải xuống
-              </Button>
             </div>
           </div>
 
           {/* Status Timeline */}
           <div className="bg-card border border-border rounded-lg p-6 mb-8">
-            <h2 className="font-bold text-foreground mb-6">Trạng thái đơn hàng</h2>
-            <div className="flex justify-between overflow-x-auto">
-              {statusSteps.map((step, index) => (
-                <div key={step.key} className="flex flex-col items-center flex-1 min-w-[80px]">
+            <h2 className="font-bold text-foreground mb-6">
+              Trạng thái đơn hàng
+            </h2>
+            <div className="flex justify-between gap-4 pb-2">
+              {statusSteps.map((step, index) => {
+                const isCurrent = index === currentStepIndex;
+                const isPassed = index < currentStepIndex;
+                const isActive = index <= currentStepIndex;
+
+                const stepColors = getStatusColors(step.key);
+
+                const currentOrderColors = getStatusColors(order.status);
+
+                return (
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition ${index <= currentStepIndex
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                      }`}
+                    key={step.key}
+                    className="flex flex-col items-center flex-1 min-w-[100px] relative"
                   >
-                    {index + 1}
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-300 ${
+                        isCurrent
+                          ? `${stepColors.bg} ${stepColors.text} ring-4 ${stepColors.ring} scale-110 shadow-lg`
+                          : isPassed
+                          ? `${stepColors.bg} ${stepColors.text}`
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+                    <p
+                      className={`text-xs text-center font-medium transition-all duration-300 ${
+                        isCurrent
+                          ? `${stepColors.text} font-bold scale-105`
+                          : isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {step.label}
+                    </p>
+                    {isCurrent && (
+                      <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
+                        <div
+                          className={`w-2 h-2 ${stepColors.bg} rounded-full animate-pulse`}
+                        ></div>
+                      </div>
+                    )}
+                    {index < statusSteps.length - 1 && (
+                      <div className="absolute top-6 left-[60%] w-full h-0.5 -z-10">
+                        <div
+                          className={`h-full transition-all duration-500 ${
+                            isPassed ? stepColors.bg : "bg-muted"
+                          }`}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <p
-                    className={`text-xs text-center font-medium ${index <= currentStepIndex ? "text-foreground" : "text-muted-foreground"
-                      }`}
-                  >
-                    {step.label}
-                  </p>
-                  {index < statusSteps.length - 1 && (
-                    <div className={`w-full h-1 mt-3 ${index < currentStepIndex ? "bg-primary" : "bg-muted"}`} />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -130,38 +227,119 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             <div className="lg:col-span-2">
               {/* Shipping Address */}
               <div className="bg-card border border-border rounded-lg p-6 mb-8">
-                <h2 className="font-bold text-foreground mb-4">Địa chỉ giao hàng</h2>
-                <div className="space-y-2 text-muted-foreground">
-                  <p className="font-semibold text-foreground">{order.shippingAddress.recipientName}</p>
-                  <p>{order.shippingAddress.street}</p>
-                  <p>
-                    {order.shippingAddress.ward}, {order.shippingAddress.district}, {order.shippingAddress.province}
+                <h2 className="font-bold text-foreground mb-4">
+                  Địa chỉ giao hàng
+                </h2>
+                {order.shippingAddress ? (
+                  <div className="space-y-2 text-muted-foreground">
+                    <p className="font-semibold text-foreground">
+                      {order.shippingAddress.recipientName}
+                    </p>
+                    <p>{order.shippingAddress.street}</p>
+                    <p>
+                      {order.shippingAddress.ward},{" "}
+                      {order.shippingAddress.district},{" "}
+                      {order.shippingAddress.province}
+                    </p>
+                    <p>Điện thoại: {order.shippingAddress.phoneNumber}</p>
+                    {order.note && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-sm font-medium text-foreground">
+                          Ghi chú:
+                        </p>
+                        <p className="text-sm italic">{order.note}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Chưa có thông tin địa chỉ giao hàng
                   </p>
-                  <p>Điện thoại: {order.shippingAddress.phoneNumber}</p>
-                </div>
+                )}
               </div>
 
               {/* Order Items */}
               <div className="bg-card border border-border rounded-lg p-6 mb-8">
-                <h2 className="font-bold text-foreground mb-4">Chi tiết đơn hàng</h2>
+                <h2 className="font-bold text-foreground mb-4">
+                  Chi tiết đơn hàng ({order.items.length} sản phẩm)
+                </h2>
                 <div className="space-y-4">
                   {order.items.map((item, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center py-3 border-b border-border last:border-0"
+                      className="flex gap-4 py-3 border-b border-border last:border-0"
                     >
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{item.bookTitle}</p>
-                        <p className="text-sm text-muted-foreground">ISBN: {item.bookIsbn}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-foreground">{item.quantity}x</p>
-                        <p className="text-primary font-semibold">
-                          {item.unitPrice.toLocaleString("vi-VN")}₫
-                        </p>
+                      {/* Book Image */}
+                      {item.bookImageUrl && (
+                        <div className="relative w-16 h-20 flex-shrink-0 rounded overflow-hidden bg-muted">
+                          <img
+                            src={item.bookImageUrl}
+                            alt={item.bookTitle}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex-1 flex justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {item.bookTitle}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ISBN: {item.bookIsbn}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Số lượng: {item.quantity}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-primary font-semibold">
+                            {item.unitPrice.toLocaleString("vi-VN")}₫
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Tổng: {item.subtotal.toLocaleString("vi-VN")}₫
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Customer Info */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h2 className="font-bold text-foreground mb-4">
+                  Thông tin khách hàng
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Họ tên</p>
+                    <p className="font-medium text-foreground">
+                      {order.customerName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium text-foreground">
+                      {order.customerEmail}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Số điện thoại
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {order.customerPhone}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Hạng thành viên
+                    </p>
+                    <p className="font-medium text-foreground uppercase">
+                      {order.customerMembershipTier}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -172,32 +350,78 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             {/* Summary */}
             <div className="lg:col-span-1">
               <div className="bg-muted/50 border border-border rounded-lg p-6 sticky top-20">
-                <h2 className="font-bold text-foreground mb-4">Tóm tắt thanh toán</h2>
+                <h2 className="font-bold text-foreground mb-4">
+                  Tóm tắt thanh toán
+                </h2>
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tạm tính:</span>
-                    <span className="font-medium">{order.subtotal.toLocaleString("vi-VN")}₫</span>
+                    <span className="font-medium">
+                      {order.subtotal.toLocaleString("vi-VN")}₫
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Vận chuyển:</span>
-                    <span className="font-medium text-accent">Miễn phí</span>
+                    <span className="font-medium">
+                      {order.shippingFee > 0 ? (
+                        `${order.shippingFee.toLocaleString("vi-VN")}₫`
+                      ) : (
+                        <span className="text-accent">Miễn phí</span>
+                      )}
+                    </span>
                   </div>
+                  {order.taxAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Thuế:</span>
+                      <span className="font-medium">
+                        {order.taxAmount.toLocaleString("vi-VN")}₫
+                      </span>
+                    </div>
+                  )}
+                  {order.discountAmount && order.discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>
+                        Giảm giá{" "}
+                        {order.promotionName && `(${order.promotionName})`}
+                        {order.discountPercent && ` ${order.discountPercent}%`}:
+                      </span>
+                      <span className="font-medium">
+                        -{order.discountAmount.toLocaleString("vi-VN")}₫
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="border-t border-border pt-4 flex justify-between mb-6">
                   <span className="font-bold">Tổng cộng:</span>
-                  <span className="font-bold text-lg text-primary">{order.total.toLocaleString("vi-VN")}₫</span>
+                  <span className="font-bold text-lg text-primary">
+                    {order.total.toLocaleString("vi-VN")}₫
+                  </span>
                 </div>
 
                 <div className="space-y-2">
                   <div className="p-3 bg-background rounded-lg">
-                    <p className="text-xs text-muted-foreground">Trạng thái thanh toán</p>
+                    <p className="text-xs text-muted-foreground">
+                      Phương thức thanh toán
+                    </p>
                     <p className="font-semibold text-foreground">
                       {order.paymentMethod}
                     </p>
                   </div>
+                  {order.promotionCode && (
+                    <div className="p-3 bg-background rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        Mã khuyến mãi
+                      </p>
+                      <p className="font-semibold text-green-600 uppercase">
+                        {order.promotionCode}
+                      </p>
+                    </div>
+                  )}
                   {order.status === "DELIVERED" && (
                     <Link href="/products" className="block">
-                      <Button className="w-full bg-primary hover:bg-primary/90">Tìm sách khác</Button>
+                      <Button className="w-full bg-primary hover:bg-primary/90">
+                        Tìm sách khác
+                      </Button>
                     </Link>
                   )}
                 </div>
@@ -209,5 +433,5 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
 
       <Footer />
     </div>
-  )
+  );
 }

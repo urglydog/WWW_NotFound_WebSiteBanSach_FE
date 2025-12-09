@@ -266,8 +266,12 @@ export default function OrdersPage() {
                   color: "bg-gray-100 text-gray-700",
                 };
                 return (
-                  <Link key={order.id} href={`/account/orders/${order.id}`}>
-                    <div className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition cursor-pointer">
+                  <Link
+                    key={order.id}
+                    href={`/account/orders/${order.id}`}
+                    className="block"
+                  >
+                    <div className="bg-card border border-border rounded-lg p-6 hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="font-bold text-lg text-foreground">
@@ -316,7 +320,7 @@ export default function OrdersPage() {
 
                       {/* Tracking number is not in OrderResponse yet, skipping */}
 
-                      <div className="mt-4 flex items-center justify-between">
+                      <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
                         <div className="flex items-center gap-2 text-primary">
                           <span className="text-sm font-medium">
                             Xem chi tiết
