@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/lib/auth-context"
-import { ordersService, OrderResponse, OrderStatus } from "@/lib/services/orders.service"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Package, ChevronRight, Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context";
+import {
+  ordersService,
+  OrderResponse,
+} from "@/lib/services/orders.service";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
+import {
+  Package,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import Link from "next/link";
 
 export default function OrdersPage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -21,14 +28,14 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
 
     if (user) {
-      fetchOrders()
+      fetchOrders();
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router]);
 
   const fetchOrders = async () => {
     try {
@@ -40,12 +47,12 @@ export default function OrdersPage() {
       )
       setOrders(sortedData)
     } catch (error) {
-      console.error("Failed to fetch orders:", error)
-      toast.error("Không thể tải danh sách đơn hàng")
+      console.error("Failed to fetch orders:", error);
+      toast.error("Không thể tải danh sách đơn hàng");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getFilteredOrders = () => {
     return orders.filter(order => {
@@ -86,10 +93,10 @@ export default function OrdersPage() {
         </main>
         <Footer />
       </div>
-    )
+    );
   }
 
-  if (!user) return null
+  if (!user) return null;
 
   const statusConfig: Record<string, { label: string; color: string }> = {
     PENDING: { label: "Chờ xác nhận", color: "bg-yellow-100 text-yellow-700" },
@@ -256,5 +263,5 @@ export default function OrdersPage() {
 
       <Footer />
     </div>
-  )
+  );
 }
