@@ -14,8 +14,6 @@ export interface AddressResponse {
     districtId: number
     wardCode: string
 }
-export type Address = AddressResponse
-
 export type Address = AddressResponse;
 
 export interface CreateAddressRequest {

@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
@@ -16,6 +16,8 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const { login, isLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get("redirect")
   const googleOAuthUrl =
     process.env.NEXT_PUBLIC_GOOGLE_OAUTH_URL ??
     "https://accounts.google.com/o/oauth2/v2/auth?client_id=890914555873-2fj89b3o9srebvjhu6a66hjehtljac8p.apps.googleusercontent.com&redirect_uri=http://localhost:8080/api/auth/google/callback&response_type=code&scope=openid%20email%20profile"
@@ -38,7 +40,12 @@ export function LoginForm() {
     try {
       const authenticatedUser = await login(formData.username, formData.password)
       const isAdmin = typeof authenticatedUser.role === "string" && authenticatedUser.role.toUpperCase() === "ADMIN"
-      router.push(isAdmin ? "/admin" : "/account")
+
+      if (redirectPath) {
+        router.push(redirectPath)
+      } else {
+        router.push(isAdmin ? "/admin" : "/account")
+      }
     } catch (err) {
       if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
         setError("Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại.")
@@ -107,11 +114,11 @@ export function LoginForm() {
             }
           }}
         >
-              <span className="flex w-full items-center justify-center gap-2">
-                <FcGoogle className="h-5 w-5" />
+          <span className="flex w-full items-center justify-center gap-2">
+            <FcGoogle className="h-5 w-5" />
             <span>Đăng nhập với Google</span>
-              </span>
-            </Button>
+          </span>
+        </Button>
       </div>
 
       <div className="text-center space-y-2">
