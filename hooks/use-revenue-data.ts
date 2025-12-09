@@ -1,5 +1,8 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import { DollarSign, TrendingUp, Wallet, Receipt, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { revenueService, RevenueStatisticResponse } from "@/lib/services/revenue.service"
+import { format, parseISO, startOfMonth, getMonth, subMonths } from "date-fns"
+import { vi } from "date-fns/locale"
 
 export interface RevenueByMonth {
   month: string
@@ -39,98 +42,167 @@ export interface DateRange {
 }
 
 export function useRevenueData() {
-  // Date range state
+  // Date range state - Default to current year or a specific range
   const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: "01/01/2024",
-    endDate: "30/06/2024"
+    startDate: format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd"), // Last 6 months
+    endDate: format(new Date(), "yyyy-MM-dd") // Today
   })
 
-  // Mock data - Developer có thể thay thế bằng API calls
-  const revenueByMonth: RevenueByMonth[] = useMemo(() => [
-    { month: "Tháng 1", revenue: 120_000_000, orders: 320, avgOrderValue: 375_000 },
-    { month: "Tháng 2", revenue: 138_000_000, orders: 342, avgOrderValue: 403_000 },
-    { month: "Tháng 3", revenue: 156_500_000, orders: 368, avgOrderValue: 425_000 },
-    { month: "Tháng 4", revenue: 171_200_000, orders: 394, avgOrderValue: 435_000 },
-    { month: "Tháng 5", revenue: 185_400_000, orders: 410, avgOrderValue: 452_000 },
-    { month: "Tháng 6", revenue: 198_900_000, orders: 432, avgOrderValue: 461_000 },
-  ], [])
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<RevenueStatisticResponse | null>(null)
 
-  const revenueStreams: RevenueStream[] = useMemo(() => [
-    { channel: "Website", value: 64 },
-    { channel: "Ứng dụng mobile", value: 22 },
-    { channel: "Sàn thương mại điện tử", value: 14 },
-  ], [])
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await revenueService.getRevenueStatistics(dateRange.startDate, dateRange.endDate)
+      setData(response)
+    } catch (error) {
+      console.error("Failed to fetch revenue stats:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [dateRange])
 
-  const categoryPerformance: CategoryPerformance[] = useMemo(() => [
-    { category: "Kinh tế", revenue: 56_400_000, growth: 18 },
-    { category: "Văn học", revenue: 42_300_000, growth: 12 },
-    { category: "Tâm lý", revenue: 35_100_000, growth: 15 },
-    { category: "Kỹ năng", revenue: 28_400_000, growth: 9 },
-  ], [])
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
-  const weeklySnapshot: WeeklySnapshot[] = useMemo(() => [
-    { day: "T2", revenue: 14_500_000 },
-    { day: "T3", revenue: 15_200_000 },
-    { day: "T4", revenue: 18_300_000 },
-    { day: "T5", revenue: 16_800_000 },
-    { day: "T6", revenue: 19_700_000 },
-    { day: "T7", revenue: 22_400_000 },
-    { day: "CN", revenue: 20_100_000 },
-  ], [])
+  // Process data for Revenue By Month Chart
+  const revenueByMonth: RevenueByMonth[] = useMemo(() => {
+    if (!data?.breakdown) return []
+
+    // Group by month
+    const monthlyGroups = data.breakdown.reduce((acc, curr) => {
+      const date = parseISO(curr.date)
+      const monthKey = format(date, "MM/yyyy") // Group key
+
+      if (!acc[monthKey]) {
+        acc[monthKey] = {
+          month: `Tháng ${format(date, "M")}`,
+          revenue: 0,
+          orders: 0,
+          avgOrderValue: 0
+        }
+      }
+
+      acc[monthKey].revenue += curr.revenue
+      acc[monthKey].orders += curr.orderCount
+
+      return acc
+    }, {} as Record<string, RevenueByMonth>)
+
+    // Calculate averages and convert to array
+    return Object.values(monthlyGroups).map(item => ({
+      ...item,
+      avgOrderValue: item.orders > 0 ? Math.round(item.revenue / item.orders) : 0
+    }))
+  }, [data])
+
+  // Process data for Weekly Snapshot (using last 7 days of the range or just the breakdown if short)
+  const weeklySnapshot: WeeklySnapshot[] = useMemo(() => {
+    if (!data?.breakdown) return []
+
+    // Take the last 7 items from breakdown for the snapshot
+    const last7Days = data.breakdown.slice(-7)
+
+    return last7Days.map(item => {
+      const date = parseISO(item.date)
+      return {
+        day: format(date, "EEEE", { locale: vi }).replace("thứ ", "T"), // Format T2, T3 etc
+        revenue: item.revenue
+      }
+    })
+  }, [data])
 
   // Calculated summary cards
-  const summaryCards: SummaryCard[] = useMemo(() => [
-    {
-      label: "Tổng doanh thu",
-      value: "0₫",
-      delta: "+7.3% so với tháng trước",
-      trend: "up",
-      icon: DollarSign,
-      accent: "text-emerald-600",
-    },
-    {
-      label: "Doanh thu thuần",
-      value: "0₫",
-      delta: "+6.1% so với tháng trước",
-      trend: "up",
-      icon: Wallet,
-      accent: "text-blue-600",
-    },
-    {
-      label: "Số đơn hàng",
-      value: "5 đơn",
-      delta: "+5.4% so với tháng trước",
-      trend: "up",
-      icon: Receipt,
-      accent: "text-indigo-600",
-    },
-    {
-      label: "Giá trị trung bình",
-      value: "21.000₫",
-      delta: "+2.1% so với tháng trước",
-      trend: "up",
-      icon: TrendingUp,
-      accent: "text-orange-600",
-    },
-  ], [])
+  const summaryCards: SummaryCard[] = useMemo(() => {
+    if (!data) return []
+
+    return [
+      {
+        label: "Tổng doanh thu",
+        value: `${data.totalRevenue?.toLocaleString("vi-VN") || 0}₫`,
+        delta: "Trong khoảng thời gian này", // Tạm thời để text tĩnh
+        trend: "up",
+        icon: DollarSign,
+        accent: "text-emerald-600",
+      },
+      {
+        label: "Doanh thu thuần",
+        value: `${(data.totalRevenue * 0.9).toLocaleString("vi-VN") || 0}₫`, // Giả định trừ thuế/phí
+        delta: "Ước tính",
+        trend: "up",
+        icon: Wallet,
+        accent: "text-blue-600",
+      },
+      {
+        label: "Số đơn hàng",
+        value: `${data.totalOrders?.toLocaleString("vi-VN") || 0} đơn`,
+        delta: "Đã hoàn thành/Giao hàng",
+        trend: "up",
+        icon: Receipt,
+        accent: "text-indigo-600",
+      },
+      {
+        label: "Giá trị trung bình",
+        value: `${(data.totalOrders > 0 ? Math.round(data.totalRevenue / data.totalOrders) : 0).toLocaleString("vi-VN")}₫`,
+        delta: "Trên mỗi đơn hàng",
+        trend: "up",
+        icon: TrendingUp,
+        accent: "text-orange-600",
+      },
+    ]
+  }, [data])
+
+  // Map backend payment method stats to revenueStreams
+  const revenueStreams: RevenueStream[] = useMemo(() => {
+    if (!data?.revenueByPaymentMethod || data.revenueByPaymentMethod.length === 0) {
+      return [
+        { channel: "Chưa có dữ liệu", value: 100 }
+      ]
+    }
+
+    return data.revenueByPaymentMethod.map(item => ({
+      channel: item.category,
+      value: item.value
+    }))
+  }, [data])
+
+  const categoryPerformance: CategoryPerformance[] = useMemo(() => {
+    if (!data?.categoryPerformance || data.categoryPerformance.length === 0) {
+      return []
+    }
+
+    return data.categoryPerformance.map(item => ({
+      category: item.category,
+      revenue: item.revenue,
+      growth: item.growth
+    }))
+  }, [data])
+
 
   // Chart colors
   const chartColors = useMemo(() => ["#8b6914", "#d4a574", "#c9957e"], [])
 
   // Actions
-  const updateDateRange = (newRange: DateRange) => {
-    setDateRange(newRange)
-    // Here you would trigger API call to fetch new data
+  const updateDateRange = (newRange: any) => {
+    // Adapter for DateRangepicker output if needed, assuming it matches for now or we fix logic
+    if (newRange?.from && newRange?.to) {
+      setDateRange({
+        startDate: format(newRange.from, "yyyy-MM-dd"),
+        endDate: format(newRange.to, "yyyy-MM-dd")
+      })
+    } else if (newRange?.startDate && newRange?.endDate) {
+      setDateRange(newRange)
+    }
   }
 
   const exportRevenueData = () => {
-    // Developer có thể implement export logic
     console.log("Exporting revenue data for:", dateRange)
   }
 
   const refreshData = () => {
-    // Developer có thể implement refresh logic
-    console.log("Refreshing revenue data")
+    fetchData()
   }
 
   return {
@@ -142,7 +214,8 @@ export function useRevenueData() {
     summaryCards,
     dateRange,
     chartColors,
-    
+    loading,
+
     // Actions
     updateDateRange,
     exportRevenueData,

@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { BookForm } from "@/components/admin/book-form"
 import { useAdminBooks } from "@/hooks/use-admin-books"
 import { AdminCreateBookRequest, adminBooksService, AdminBookDetail, AdminUpdateBookRequest } from "@/lib/services/admin-books.service"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 
-export default function EditBookPage({ params }: { params: { id: string } }) {
+export default function EditBookPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params)
     const { updateBook } = useAdminBooks()
     const router = useRouter()
     const { toast } = useToast()
@@ -17,7 +18,7 @@ export default function EditBookPage({ params }: { params: { id: string } }) {
     useEffect(() => {
         const fetchBook = async () => {
             try {
-                const data = await adminBooksService.getBookDetail(params.id)
+                const data = await adminBooksService.getBookDetail(id)
                 setBook(data)
             } catch (error) {
                 console.error("Failed to fetch book details", error)
@@ -32,7 +33,7 @@ export default function EditBookPage({ params }: { params: { id: string } }) {
             }
         }
         fetchBook()
-    }, [params.id, router, toast])
+    }, [id, router, toast])
 
     const handleSubmit = async (data: AdminCreateBookRequest, images: File[]) => {
         if (!book) return

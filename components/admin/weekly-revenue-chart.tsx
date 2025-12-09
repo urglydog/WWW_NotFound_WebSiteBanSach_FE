@@ -5,15 +5,24 @@ import type { WeeklySnapshot } from "@/hooks/use-revenue-data"
 interface WeeklyRevenueChartProps {
   data: WeeklySnapshot[]
   className?: string
+  loading?: boolean
 }
 
-export function WeeklyRevenueChart({ data, className }: WeeklyRevenueChartProps) {
+export function WeeklyRevenueChart({ data, className, loading }: WeeklyRevenueChartProps) {
   return (
-    <div className={cn("bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm", className)}>
+    <div className={cn("bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm relative", className)}>
+      {loading && (
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground animate-pulse">Đang tải...</p>
+          </div>
+        </div>
+      )}
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-6">
         Doanh thu trong tuần
       </h2>
-      
+
       <div className="w-full h-[240px] sm:h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
@@ -24,17 +33,17 @@ export function WeeklyRevenueChart({ data, className }: WeeklyRevenueChartProps)
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-            <XAxis 
-              dataKey="day" 
+            <XAxis
+              dataKey="day"
               stroke="var(--color-muted-foreground)"
               fontSize={12}
             />
-            <YAxis 
-              stroke="var(--color-muted-foreground)" 
+            <YAxis
+              stroke="var(--color-muted-foreground)"
               tickFormatter={(value) => `${value / 1_000_000}tr`}
               fontSize={12}
             />
-            <Tooltip 
+            <Tooltip
               formatter={(value: number) => [`${value.toLocaleString("vi-VN")}₫`, "Doanh thu"]}
               labelFormatter={(label) => `Thứ ${label}`}
             />
