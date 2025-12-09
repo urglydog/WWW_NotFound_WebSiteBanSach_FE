@@ -19,6 +19,8 @@ export interface User {
   avatar?: string; // Can be avatarUrl from Google or custom avatar
   isEmailVerified?: boolean;
   createdAt: string;
+  gender?: string | null;
+  dateOfBirth?: string | null;
 }
 
 function decodeGoogleCredential(credential: string) {

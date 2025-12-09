@@ -3,11 +3,11 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { EmailVerification } from "@/components/auth/email-verification";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, type User } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2, Package, ChevronRight } from "lucide-react";
+import { LogOut, User as UserIcon, ShoppingBag, Heart, Settings, MapPin, Edit, Trash2, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usersService } from "@/lib/services/users.service";
 import { ordersService, OrderResponse } from "@/lib/services/orders.service";
@@ -32,6 +32,8 @@ import { WishlistSection } from "@/components/account/wishlist-section";
 import { addressService, type Address } from "@/lib/services";
 import { AddressSelectModal } from "@/components/products/address-select-modal";
 
+import { ProfileEditDialog } from "@/components/account/profile-edit-dialog";
+
 export default function AccountPage() {
   const { user, logout, isLoading, setUserState } = useAuth();
   const router = useRouter();
@@ -44,72 +46,57 @@ export default function AccountPage() {
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-
   // // Fetch user profile from API - fetch khi user có và chưa fetch
-  // useEffect(() => {
-  //   // Tránh fetch nhiều lần
-  //   if (hasFetchedProfile) {
-  //     return;
-  //   }
+  // Fetch user profile from API
+  const fetchUserProfile = async () => {
+    if (!user) return;
 
-  //   const token = localStorage.getItem("authToken");
-  //   if (!token || !user) {
-  //     setLoadingProfile(false);
-  //     return;
-  //   }
+    try {
+      setLoadingProfile(true);
+      const profile = await usersService.getMyProfile();
+      setUserProfile(profile as UserProfile);
 
-  //   console.log("abadsadasdsadsadsadsadsadsadsadsadsa")
+      // Update AuthContext with latest user info including avatarUrl
+      const updatedUser = {
+        ...user,
+        avatar: profile.avatar || profile.avatarUrl || user.avatar,
+        emailVerified: profile.emailVerified ?? user.isEmailVerified,
+        fullName: profile.fullName || user.fullName,
+        phone: profile.phoneNumber || user.phone,
+        username: profile.username || user.username,
+        gender: profile.gender || user.gender,
+        dateOfBirth: profile.dateOfBirth || user.dateOfBirth,
+        // Preserve other fields
+      };
 
-  //   const fetchUserProfile = async () => {
-  //     // Đánh dấu đã fetch để tránh fetch lại
-  //     setHasFetchedProfile(true);
+      // Check if critical fields changed before updating context to avoid loops
+      if (
+        updatedUser.avatar !== user.avatar ||
+        updatedUser.fullName !== user.fullName ||
+        updatedUser.phone !== user.phone
+      ) {
+        setUserState(updatedUser);
+        // Update localStorage with new info
+        localStorage.setItem("user", JSON.stringify(updatedUser)); // Or handle by auth context
+      }
 
-  //     try {
-  //       const profile = await usersService.getMyProfile();
-  //       setUserProfile(profile as UserProfile);
+      setLocalEmailVerified(profile.emailVerified || false);
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+    } finally {
+      setLoadingProfile(false);
+      setHasFetchedProfile(true);
+    }
+  };
 
-  //       // Update AuthContext with latest user info including avatarUrl
-  //       // Chỉ update nếu có thay đổi thực sự để tránh trigger lại
-  //       const updatedUser = {
-  //         ...user,
-  //         avatar: profile.avatarUrl || profile.avatar || user.avatar,
-  //         emailVerified: profile.emailVerified ?? user.isEmailVerified,
-  //         fullName: profile.fullName || user.fullName,
-  //         phone: profile.phoneNumber || user.phone,
-  //         username: profile.username || user.username,
-  //       };
-
-  //       // Chỉ update nếu có thay đổi
-  //       const hasChanges = 
-  //         updatedUser.avatar !== user.avatar ||
-  //         updatedUser.emailVerified !== user.isEmailVerified ||
-  //         updatedUser.fullName !== user.fullName ||
-  //         updatedUser.phone !== user.phone ||
-  //         updatedUser.username !== user.username;
-
-  //       if (hasChanges) {
-  //         setUserState(updatedUser);
-  //         localStorage.setItem("user", JSON.stringify(updatedUser));
-  //       }
-
-  //       console.log("------------------------------------"+ profile.emailVerified)
-
-  //       setLocalEmailVerified(profile.emailVerified || false);
-  //     } catch (error) {
-  //       console.error("Failed to fetch user profile:", error);
-  //       // Reset flag nếu có lỗi để có thể retry
-  //       setHasFetchedProfile(false);
-  //     } finally {
-  //       setLoadingProfile(false);
-  //     }
-  //   };
-
-  //   fetchUserProfile();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [user?.id]); // Chạy khi user.id thay đổi (khi user được load)
+  useEffect(() => {
+    if (user?.id && !hasFetchedProfile) {
+      fetchUserProfile();
+    }
+  }, [user?.id, hasFetchedProfile]);
 
   // Refresh user from localStorage on mount AND when emailVerified event fires
 
@@ -324,7 +311,7 @@ export default function AccountPage() {
                       : "hover:bg-muted text-foreground"
                       }`}
                   >
-                    <User size={18} />
+                    <UserIcon size={18} />
                     Thông tin cá nhân
                   </button>
                   <button
@@ -445,7 +432,7 @@ export default function AccountPage() {
                         </label>
                         <p className="text-foreground font-medium">
                           {userProfile?.gender
-                            ? (userProfile.gender === "MALE" ? "Nam" : userProfile.gender === "FEMALE" ? "Nữ" : "Khác")
+                            ? (userProfile.gender.toUpperCase() === "MALE" ? "Nam" : userProfile.gender.toUpperCase() === "FEMALE" ? "Nữ" : "Khác")
                             : "Chưa cập nhật"}
                         </p>
                       </div>
@@ -486,7 +473,7 @@ export default function AccountPage() {
                         </div>
                       )}
                     </div>
-                    <Button className="mt-4">Chỉnh sửa thông tin</Button>
+                    <Button className="mt-4" onClick={() => setIsEditingProfile(true)}>Chỉnh sửa thông tin</Button>
                   </div>
                 </div>
               )}
@@ -711,6 +698,12 @@ export default function AccountPage() {
           setIsAddressModalOpen(false);
           setEditingAddress(null);
         }}
+      />
+      <ProfileEditDialog
+        user={userProfile && Object.keys(userProfile).length > 0 ? (userProfile as unknown as User) : user}
+        open={isEditingProfile}
+        onOpenChange={setIsEditingProfile}
+        onProfileUpdated={fetchUserProfile}
       />
     </div>
   );

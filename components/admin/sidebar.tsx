@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { LayoutDashboard, BookOpen, ShoppingCart, Users, Settings, LogOut, BarChart3, Tag } from "lucide-react"
+import { LayoutDashboard, BookOpen, ShoppingCart, Users, Settings, LogOut, BarChart3, Newspaper, Tag } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import Image from "next/image";
 
 interface AdminSidebarProps {
   onLogout: () => void
@@ -20,7 +21,8 @@ export function AdminSidebar({ onLogout, onNavigate, className }: AdminSidebarPr
     { label: "Quản lý đơn hàng", href: "/admin/orders", icon: ShoppingCart },
     { label: "Quản lý khuyến mãi", href: "/admin/promotions", icon: Tag },
     { label: "Thống kê doanh thu", href: "/admin/revenue", icon: BarChart3 },
-    { label: "Người dùng", href: "/admin/users", icon: Users },
+    { label: "Quản lý người dùng", href: "/admin/users", icon: Users },
+    { label: "Quản lý tin tức", href: "/admin/news", icon: Newspaper },
     { label: "Cài đặt", href: "/admin/settings", icon: Settings },
   ]
 
@@ -28,12 +30,21 @@ export function AdminSidebar({ onLogout, onNavigate, className }: AdminSidebarPr
     <div className={cn("flex w-64 min-h-full flex-col bg-primary text-primary-foreground", className)}>
       {/* Logo */}
       <div className="p-6 border-b border-primary-foreground/20">
+
+
+
         <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
-            <span className="text-xl">📚</span>
-          </div>
+          <Image
+            src="/logo_not_found.png"
+            alt="Not Found Bookstore"
+            width={48}
+            height={48}
+            priority
+            className="h-12 w-12 object-contain"
+          />
           <span className="font-bold text-lg">Quản lý</span>
         </Link>
+
       </div>
 
       {/* Menu */}

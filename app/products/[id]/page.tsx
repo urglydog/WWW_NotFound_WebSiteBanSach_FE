@@ -13,6 +13,9 @@ import type { Address } from "@/lib/services/address.service"
 import type { CalculateShippingResponse } from "@/lib/services/shipment.service"
 import type { Promotion } from "@/lib/services/promotions.service"
 import { AddressSelectModal } from "@/components/products/address-select-modal"
+import { ProductCard } from "@/components/products/product-card"
+import useEmblaCarousel from 'embla-carousel-react'
+import Autoplay from 'embla-carousel-autoplay'
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string | string[] }>()
@@ -36,6 +39,19 @@ export default function ProductDetailPage() {
   const [shippingLoading, setShippingLoading] = useState(false)
   const [activePromotions, setActivePromotions] = useState<Promotion[]>([])
   const [showAllPromotions, setShowAllPromotions] = useState(false)
+  const [bestSellers, setBestSellers] = useState<Book[]>([])
+  const [bestSellersLoading, setBestSellersLoading] = useState(false)
+  
+  // Embla Carousel for best sellers
+  const [emblaRef] = useEmblaCarousel(
+    { 
+      loop: true,
+      align: 'start',
+      skipSnaps: false,
+      dragFree: true,
+    },
+    [Autoplay({ delay: 2000, stopOnInteraction: false })]
+  )
 
   useEffect(() => {
     // Check if user is logged in
@@ -65,6 +81,19 @@ export default function ProductDetailPage() {
         })
         .catch(error => {
           console.error("Error loading promotions:", error)
+        })
+
+      // Load best sellers
+      setBestSellersLoading(true)
+      booksService.getBestSellers(8)
+        .then(books => {
+          setBestSellers(books)
+        })
+        .catch(error => {
+          console.error("Error loading best sellers:", error)
+        })
+        .finally(() => {
+          setBestSellersLoading(false)
         })
 
       // Check wishlist status only if user is logged in
@@ -636,6 +665,31 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Best Sellers Section */}
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Sách bán chạy</h2>
+            
+            {bestSellersLoading ? (
+              <div className="flex justify-center py-8">
+                <p className="text-muted-foreground">Đang tải...</p>
+              </div>
+            ) : bestSellers.length === 0 ? (
+              <div className="text-center py-8 bg-muted/30 rounded-lg">
+                <p className="text-muted-foreground">Không có sách bán chạy</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden" ref={emblaRef}>
+                <div className="flex gap-4">
+                  {bestSellers.map((book) => (
+                    <div key={book.id} className="flex-[0_0_180px] sm:flex-[0_0_220px] min-w-0">
+                      <ProductCard book={book} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

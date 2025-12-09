@@ -34,7 +34,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AdminBookDetail, BookStatus, AdminCreateBookRequest } from "@/lib/services/admin-books.service"
 import { categoriesService } from "@/lib/services/categories.service"
-import { MultiSelect } from "@/components/ui/multi-select" // Assuming you might have or need a multi-select component. If not, I'll use a simple select for now or ask to add one.
+import { authorsService } from "@/lib/services/authors.service"
+import { MultiSelect } from "@/components/ui/multi-select"
 // Let's implement a simple multi-select or just use basic select for single category first if multi-select isn't available, but the API supports list.
 // I will use a simple checkbox list or look for a MultiSelect in the codebase.
 // Since I don't see a MultiSelect in the file list earlier, I will implement a basic selection UI or use a simple input for comma-separated IDs if needed, but better to fetch categories.
@@ -68,6 +69,7 @@ interface BookFormDialogProps {
 
 export function BookFormDialog({ open, onOpenChange, book, onSubmit }: BookFormDialogProps) {
     const [categories, setCategories] = useState<{ id: string, name: string }[]>([])
+    const [authors, setAuthors] = useState<{ id: string, name: string }[]>([])
     const [selectedImages, setSelectedImages] = useState<File[]>([])
 
     const form = useForm<BookFormValues>({
@@ -87,20 +89,30 @@ export function BookFormDialog({ open, onOpenChange, book, onSubmit }: BookFormD
         }
     })
 
-    // Load categories
+    // Load categories and authors
     useEffect(() => {
-        const loadCategories = async () => {
+        const loadData = async () => {
             try {
-                const res = await categoriesService.getCategories()
-                setCategories(res.map((c: any) => ({ // Adjust based on CategoriesService response
+                const [cats, auths] = await Promise.all([
+                    categoriesService.getCategories(),
+                    authorsService.getAllAuthorsForSelect()
+                ])
+
+                setCategories(cats.map((c: any) => ({
                     id: c.id,
                     name: c.name
                 })))
+
+                setAuthors(auths.map((a: any) => ({
+                    id: a.id,
+                    name: a.name
+                })))
+
             } catch (err) {
-                console.error("Failed to load categories", err)
+                console.error("Failed to load form data", err)
             }
         }
-        loadCategories()
+        loadData()
     }, [])
 
     // Reset form when book changes
@@ -273,6 +285,25 @@ export function BookFormDialog({ open, onOpenChange, book, onSubmit }: BookFormD
                                             </SelectContent>
                                         </Select>
                                         <FormDescription>Hiện tại hỗ trợ chọn 1 thể loại chính (Demo)</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="authorIds"
+                                render={({ field }) => (
+                                    <FormItem className="col-span-2">
+                                        <FormLabel>Tác giả</FormLabel>
+                                        <FormControl>
+                                            <MultiSelect
+                                                options={authors.map(a => ({ label: a.name, value: a.id }))}
+                                                selected={field.value || []}
+                                                onChange={field.onChange}
+                                                placeholder="Chọn tác giả..."
+                                            />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}

@@ -58,6 +58,13 @@ export function UsersSearchFilters({
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10 bg-background"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              name="user-search-no-autofill"
+              id="user-search-no-autofill"
+              data-form-type="other"
             />
           </div>
 
@@ -150,7 +157,7 @@ export function UsersSearchFilters({
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
               <span className="text-sm text-muted-foreground">Bộ lọc đang áp dụng:</span>
-              
+
               {searchTerm && (
                 <Badge variant="secondary" className="gap-1">
                   <Filter className="w-3 h-3" />
@@ -163,7 +170,7 @@ export function UsersSearchFilters({
                   </button>
                 </Badge>
               )}
-              
+
               {statusFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1">
                   <UserCheck className="w-3 h-3" />
@@ -176,7 +183,7 @@ export function UsersSearchFilters({
                   </button>
                 </Badge>
               )}
-              
+
               {dateRange && (dateRange.from || dateRange.to) && onDateRangeChange && (
                 <Badge variant="secondary" className="gap-1">
                   <Calendar className="w-3 h-3" />
@@ -189,10 +196,10 @@ export function UsersSearchFilters({
                   </button>
                 </Badge>
               )}
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
+
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={onReset}
                 className="ml-2 text-muted-foreground hover:text-foreground"
               >

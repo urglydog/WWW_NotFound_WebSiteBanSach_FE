@@ -150,18 +150,26 @@ export const ordersService = {
 
   /**
    * ADMIN: Get orders by status
-   * GET /api/orders/admin/status/{status}
+   * GET /api/orders/admin/status/{status}?startDate=2024-01-01&endDate=2024-01-31
    */
-  async getOrdersByStatus(status: OrderStatus): Promise<OrderResponse[]> {
-    return apiClient.get<OrderResponse[]>(`/orders/admin/status/${status}`)
+  async getOrdersByStatus(status: OrderStatus, startDate?: string, endDate?: string): Promise<OrderResponse[]> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiClient.get<OrderResponse[]>(`/orders/admin/status/${status}${queryString ? `?${queryString}` : ''}`)
   },
 
   /**
    * ADMIN: Get total revenue
-   * GET /api/orders/admin/revenue
+   * GET /api/orders/admin/revenue?startDate=2024-01-01&endDate=2024-01-31
    */
-  async getTotalRevenue(): Promise<number> {
-    return apiClient.get<number>("/orders/admin/revenue")
+  async getTotalRevenue(startDate?: string, endDate?: string): Promise<number> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiClient.get<number>(`/orders/admin/revenue${queryString ? `?${queryString}` : ''}`)
   },
 
   /**
