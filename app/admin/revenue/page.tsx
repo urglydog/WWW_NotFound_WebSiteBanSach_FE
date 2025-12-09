@@ -24,23 +24,14 @@ export default function AdminRevenuePage() {
     chartColors,
     updateDateRange,
     exportRevenueData,
-    refreshData
+    refreshData,
+    loading
   } = useRevenueData()
 
   // Handler functions - có thể assign cho từng developer khác nhau
-  const handleExport = () => {
-    // Developer A: Implement export logic
-    exportRevenueData()
-  }
-
   const handleRefresh = () => {
     // Developer B: Implement refresh logic
     refreshData()
-  }
-
-  const handleSettings = () => {
-    // Developer C: Implement settings logic
-    console.log('Open revenue settings')
   }
 
   const handleDateRangeChange = (newRange: any) => {
@@ -55,9 +46,7 @@ export default function AdminRevenuePage() {
         <RevenuePageHeader
           dateRange={dateRange}
           onDateRangeChange={handleDateRangeChange}
-          onExport={handleExport}
           onRefresh={handleRefresh}
-          onSettings={handleSettings}
         />
 
         <RevenueSummaryCards summaryCards={summaryCards} />
@@ -66,11 +55,13 @@ export default function AdminRevenuePage() {
           <RevenueChart
             data={revenueByMonth}
             className="2xl:col-span-2"
+            loading={loading}
           />
 
           <RevenueChannelsChart
             data={revenueStreams}
             colors={chartColors}
+            loading={loading}
           />
         </section>
 
@@ -78,9 +69,13 @@ export default function AdminRevenuePage() {
           <CategoryPerformanceTable
             data={categoryPerformance}
             className="xl:col-span-2"
+            loading={loading}
           />
 
-          <WeeklyRevenueChart data={weeklySnapshot} />
+          <WeeklyRevenueChart
+            data={weeklySnapshot}
+            loading={loading}
+          />
         </section>
 
       </div>

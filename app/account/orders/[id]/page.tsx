@@ -90,6 +90,7 @@ export default function OrderDetailPage({
   const [ratings, setRatings] = useState<{ [key: number]: number }>({});
   const [reviews, setReviews] = useState<{ [key: number]: string }>({});
   const [submitting, setSubmitting] = useState<{ [key: number]: boolean }>({});
+  const [reviewedItems, setReviewedItems] = useState<Set<number>>(new Set());
 
   // Unwrap params Promise
   const { id } = use(params);
@@ -104,6 +105,9 @@ export default function OrderDetailPage({
       fetchOrder();
     }
   }, [user, authLoading, router, id]);
+
+
+  console.log("---------------------------", order)
 
   const fetchOrder = async () => {
     try {
@@ -381,15 +385,15 @@ export default function OrderDetailPage({
                 {order.shippingAddress ? (
                   <div className="space-y-2 text-muted-foreground">
                     <p className="font-semibold text-foreground">
-                      {order.shippingAddress.recipientName}
+                      {order.recipientName}
                     </p>
-                    <p>{order.shippingAddress.street}</p>
+                    <p>{order.shippingAddress}</p>
                     <p>
-                      {order.shippingAddress.ward},{" "}
-                      {order.shippingAddress.district},{" "}
-                      {order.shippingAddress.province}
+                      {order.shippingWard},{" "}
+                      {order.shippingDistrict},{" "}
+                      {order.shippingProvince}
                     </p>
-                    <p>Điện thoại: {order.shippingAddress.phoneNumber}</p>
+                    <p>Điện thoại: {order.recipientPhone}</p>
                     {order.note && (
                       <div className="mt-3 pt-3 border-t border-border">
                         <p className="text-sm font-medium text-foreground">
@@ -498,7 +502,13 @@ export default function OrderDetailPage({
                     Đánh giá đơn hàng
                   </h2>
                   <div className="space-y-4">
-                    {order.items.map((item, index) => (
+                    {order.items.map((item, index) => {
+                      // Skip if already reviewed
+                      if (reviewedItems.has(index)) {
+                        return null;
+                      }
+                      
+                      return (
                       <div
                         key={index}
                         className="flex gap-4 py-4 border-b border-border last:border-0"
@@ -605,6 +615,9 @@ export default function OrderDetailPage({
                                     "Đánh giá của bạn đã được gửi!"
                                   );
 
+                                  // Hide the reviewed item
+                                  setReviewedItems((prev) => new Set(prev).add(index));
+
                                   // Clear form after successful submission
                                   setRatings((prev) => {
                                     const newRatings = { ...prev };
@@ -640,7 +653,8 @@ export default function OrderDetailPage({
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}

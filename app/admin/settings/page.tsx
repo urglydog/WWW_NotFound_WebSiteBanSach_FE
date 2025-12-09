@@ -8,7 +8,7 @@ export default function AdminSettingsPage() {
     storeName: "Nhà Sách Online",
     email: "contact@bookstore.vn",
     phone: "1900-123-456",
-    address: "123 Đường ABC, Hà Nội",
+    address: "12 Nguyễn Văn Bảo, Hồ Chí Minh",
     shippingFee: "0",
     minOrder: "0",
     freeShippingThreshold: "500000",

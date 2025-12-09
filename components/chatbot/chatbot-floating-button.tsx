@@ -51,7 +51,7 @@ const STORE_INFO = {
   name: "Nhà Sách Online",
   phone: "1900-123-456",
   email: "contact@bookstore.vn",
-  address: "123 Đường ABC, Hà Nội",
+  address: "12 Đường Nguyễn Văn Bảo, Gò Vấp, HCM",
 };
 
 export function ChatbotFloatingButton() {
