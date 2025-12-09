@@ -7,17 +7,7 @@ import { apiClient } from "../api-client"
 
 // --- DTO Interfaces ---
 
-export interface AddressResponse {
-  id: string
-  recipientName: string
-  phoneNumber: string
-  street: string
-  ward: string
-  district: string
-  province: string
-  latitude: number
-  longitude: number
-}
+
 
 export interface OrderItemResponse {
   id: string
@@ -63,8 +53,16 @@ export interface OrderResponse {
   customerPhone: string
   customerMembershipTier: string
 
+  // Shipping info (Flattened)
+  recipientName?: string
+  recipientPhone?: string
+  shippingAddress?: string // fullAddress
+  shippingProvince?: string
+  shippingDistrict?: string
+  shippingWard?: string
+  shippingNote?: string
+
   items: OrderItemResponse[]
-  shippingAddress: AddressResponse
   note?: string
 }
 
