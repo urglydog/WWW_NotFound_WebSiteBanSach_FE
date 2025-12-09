@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { X, Trash2, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 export function CartSidebar() {
   const {
@@ -19,6 +21,8 @@ export function CartSidebar() {
     toggleItemSelection,
     selectAll
   } = useCart()
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
   const items = cart?.items || []
 
@@ -191,11 +195,21 @@ export function CartSidebar() {
               <span className="font-bold">Tổng cộng:</span>
               <span className="font-bold text-lg text-primary">{total.toLocaleString("vi-VN")}₫</span>
             </div>
-            <Link href={selectedItems.length > 0 ? "/checkout" : "#"} className="block" onClick={(e) => { closeCart(); if (selectedItems.length === 0) e.preventDefault() }}>
-              <Button className="w-full bg-primary hover:bg-primary/90" disabled={loading || selectedItems.length === 0}>
-                Thanh toán ({selectedItems.length})
-              </Button>
-            </Link>
+            <Button
+              className="w-full bg-primary hover:bg-primary/90"
+              disabled={loading || selectedItems.length === 0}
+              onClick={() => {
+                if (selectedItems.length === 0) return
+                closeCart()
+                if (!isAuthenticated) {
+                  router.push("/login?redirect=/checkout")
+                } else {
+                  router.push("/checkout")
+                }
+              }}
+            >
+              Thanh toán ({selectedItems.length})
+            </Button>
             <Button
               variant="outline"
               className="w-full bg-transparent"
