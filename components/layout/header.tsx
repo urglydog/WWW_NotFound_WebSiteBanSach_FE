@@ -64,6 +64,15 @@ export function Header() {
                 Danh mục
               </Link>
               <Link
+                href="/news"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive("/news") ? "text-primary font-bold" : "text-foreground"
+                )}
+              >
+                Tin tức
+              </Link>
+              <Link
                 href="/about"
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
@@ -171,6 +180,16 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Danh mục
+              </Link>
+              <Link
+                href="/news"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-muted",
+                  isActive("/news") ? "bg-muted text-primary font-bold" : "text-foreground"
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Tin tức
               </Link>
               <Link
                 href="/about"
