@@ -6,11 +6,10 @@ import {
   FilterSection,
   ContentLayout,
   BooksTable,
-  StatisticsSidebar,
-  BookFormDialog
+  StatisticsSidebar
 } from "@/components/admin"
 import { useAdminBooks } from "@/hooks/use-admin-books"
-import { AdminBookDetail, AdminCreateBookRequest, AdminUpdateBookRequest } from "@/lib/services/admin-books.service"
+import { AdminBookDetail } from "@/lib/services/admin-books.service"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useRouter } from "next/navigation"
 
 export default function AdminBooksPage() {
   const {
@@ -28,13 +28,10 @@ export default function AdminBooksPage() {
     loading,
     pageData,
     fetchBooks,
-    createBook,
-    updateBook,
     deleteBook
   } = useAdminBooks()
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingBook, setEditingBook] = useState<AdminBookDetail | null>(null)
+  const router = useRouter()
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [bookToDelete, setBookToDelete] = useState<string | null>(null)
@@ -42,13 +39,11 @@ export default function AdminBooksPage() {
   // -- Handlers --
 
   const handleAddNewBook = () => {
-    setEditingBook(null)
-    setDialogOpen(true)
+    router.push("/admin/books/new")
   }
 
   const handleEditBook = (book: AdminBookDetail) => {
-    setEditingBook(book)
-    setDialogOpen(true)
+    router.push(`/admin/books/${book.id}/edit`)
   }
 
   const handleDeleteBook = (id: string) => {
@@ -64,15 +59,7 @@ export default function AdminBooksPage() {
     }
   }
 
-  const handleFormSubmit = async (data: AdminCreateBookRequest, images?: File[]) => {
-    if (editingBook) {
-      // Update
-      await updateBook(editingBook.id, data as AdminUpdateBookRequest, images)
-    } else {
-      // Create
-      await createBook(data, images)
-    }
-  }
+
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -134,13 +121,7 @@ export default function AdminBooksPage() {
           </div>
         </ContentLayout>
 
-        {/* Create / Edit Dialog */}
-        <BookFormDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          book={editingBook}
-          onSubmit={handleFormSubmit}
-        />
+
 
         {/* Delete Confirmation */}
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

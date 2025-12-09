@@ -10,9 +10,11 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { authService } from "@/lib/services/auth.service"
 import { usersService } from "@/lib/services/users.service"
-import { booksService, Book } from "@/lib/services/books.service"
-import { categoriesService, CategoryWithSampleBook } from "@/lib/services/categories.service"
+import { booksService, Book, CategoryWithBooks } from "@/lib/services/books.service"
+import { categoriesService, Category } from "@/lib/services/categories.service"
 import { message } from "antd"
+import useEmblaCarousel from 'embla-carousel-react'
+import Autoplay from 'embla-carousel-autoplay'
 
 export default function Home() {
   const router = useRouter()
@@ -21,21 +23,27 @@ export default function Home() {
   const [hasProcessedCallback, setHasProcessedCallback] = useState(false)
   const [bestSellingBooks, setBestSellingBooks] = useState<Book[]>([])
   const [suggestedBooks, setSuggestedBooks] = useState<Book[]>([])
-  const [categoriesWithSampleBooks, setCategoriesWithSampleBooks] = useState<CategoryWithSampleBook[]>([])
+  const [popularCategoriesWithBooks, setPopularCategoriesWithBooks] = useState<CategoryWithBooks[]>([])
   const [literatureBooks, setLiteratureBooks] = useState<Book[]>([])
+  
+  // Embla Carousel for hero section
+  const [emblaRef] = useEmblaCarousel(
+    { loop: true },
+    [Autoplay({ delay: 3000, stopOnInteraction: false })]
+  )
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const [bestSellers, suggested, categoriesWithSamples, literatureResponse] = await Promise.all([
+        const [bestSellers, suggested, categoriesWithBooks, literatureResponse] = await Promise.all([
           booksService.getBestSellers(4),
           booksService.getSuggestedBooks(4),
-          categoriesService.getCategoriesWithSampleBook(),
-          booksService.getBooks({ danhMuc: ["Văn học"], size: 4 })
+          booksService.getBooksByPopularCategories(3),
+          booksService.getBooks({ size: 4 })
         ])
         setBestSellingBooks(bestSellers)
         setSuggestedBooks(suggested)
-        setCategoriesWithSampleBooks(categoriesWithSamples)
+        setPopularCategoriesWithBooks(categoriesWithBooks)
         setLiteratureBooks(literatureResponse.content)
       } catch (error) {
         console.error("Failed to fetch books:", error)
@@ -252,19 +260,83 @@ export default function Home() {
                   Tìm kiếm những cuốn sách yêu thích của bạn từ hàng triệu đầu sách được chọn lọc cẩn thận.
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:w-auto">
-                    Mua sắm ngay
-                  </Button>
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                    Khám phá thêm
-                  </Button>
+                  <Link href="/products">
+                    <Button size="lg" className="w-full bg-primary hover:bg-primary/90 sm:w-auto">
+                      Mua sắm ngay
+                    </Button>
+                  </Link>
+                  <Link href="/products">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                      Khám phá thêm
+                    </Button>
+                  </Link>
                 </div>
               </div>
               <div className="order-first flex justify-center lg:order-last">
-                <div className="flex aspect-square max-w-xs items-center justify-center rounded-2xl bg-muted sm:max-w-sm lg:max-w-md">
-                  <div className="text-center">
-                    <span className="text-5xl sm:text-6xl">📚</span>
-                    <p className="mt-4 text-sm text-muted-foreground sm:text-base">Hình ảnh sách nổi bật</p>
+                <div className="flex aspect-square max-w-xs items-center justify-center rounded-2xl overflow-hidden bg-muted sm:max-w-sm lg:max-w-md shadow-lg">
+                  {bestSellingBooks.length > 0 ? (
+                    <div className="w-full h-full" ref={emblaRef}>
+                      <div className="flex h-full">
+                        {bestSellingBooks.slice(0, 4).map((book) => (
+                          <Link 
+                            key={book.id} 
+                            href={`/products/${book.id}`}
+                            className="flex-[0_0_100%] min-w-0 relative group cursor-pointer"
+                          >
+                            <img
+                              src={book.mainImageUrl || book.imageUrls?.[0] || "/placeholder.svg"}
+                              alt={book.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 group-hover:from-black/90 transition-colors">
+                              <p className="text-white font-semibold text-sm line-clamp-2">{book.title}</p>
+                              <p className="text-white/80 text-xs mt-1">{book.authorNames?.[0]}</p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="text-white font-bold text-sm">{book.discountPrice.toLocaleString("vi-VN")}₫</span>
+                                {book.price && book.discountPrice < book.price && (
+                                  <span className="text-white/60 text-xs line-through">{book.price.toLocaleString("vi-VN")}₫</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none"></div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <span className="text-5xl sm:text-6xl">📚</span>
+                      <p className="mt-4 text-sm text-muted-foreground sm:text-base">Khám phá sản phẩm nổi bật</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Banner Section */}
+        <section className="py-8 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-8 md:p-12 text-white shadow-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                    Khuyến mãi đặc biệt!
+                  </h2>
+                  <p className="text-lg mb-6 text-white/90">
+                    Giảm giá lên đến 50% cho tất cả các đầu sách mới
+                  </p>
+                  <Link href="/products">
+                    <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
+                      Mua ngay
+                    </Button>
+                  </Link>
+                </div>
+                <div className="hidden md:flex justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-3xl"></div>
+                    <span className="relative text-8xl">🎁</span>
                   </div>
                 </div>
               </div>
@@ -311,17 +383,23 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-              {categoriesWithSampleBooks.length > 0 && (
-                categoriesWithSampleBooks.slice(0, 3).map((item) => (
-                  <Link key={item.id} href={`/categories/${item.id}`}>
+              {popularCategoriesWithBooks.length > 0 && (
+                popularCategoriesWithBooks.slice(0, 3).map((item) => (
+                  <Link key={item.category.id} href={`/categories/${item.category.id}`}>
                     <div className="group cursor-pointer">
                       <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
                         <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
                           {(() => {
-                            const bookImage = item.sampleBook?.imageUrls?.[0];
+                            const bookImage = item.books && item.books.length > 0
+                              ? (item.books[0].mainImageUrl || (item.books[0].imageUrls && item.books[0].imageUrls[0]))
+                              : null;
 
                             if (bookImage) {
-                              return <img src={bookImage} alt={item.name} className="h-full w-full object-cover" />;
+                              return <img src={bookImage} alt={item.category.name} className="h-full w-full object-cover" />;
+                            }
+
+                            if (item.category.image) {
+                              return <img src={item.category.image} alt={item.category.name} className="h-full w-full object-cover" />;
                             }
 
                             return <span className="text-4xl sm:text-5xl">📖</span>;
@@ -329,10 +407,10 @@ export default function Home() {
                         </div>
                       </div>
                       <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
-                        {item.name}
+                        {item.category.name}
                       </h3>
                       <p className="text-sm text-muted-foreground sm:text-base">
-                        {item.description || `Khám phá ${item.name}`}
+                        {item.category.description || `Khám phá ${item.category.name}`}
                       </p>
                     </div>
                   </Link>

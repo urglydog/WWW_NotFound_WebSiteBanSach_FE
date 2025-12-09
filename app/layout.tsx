@@ -1,3 +1,5 @@
+import { OrderProvider } from "@/lib/order-context"
+import { Toaster } from "@/components/ui/toaster"
 import type React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -41,14 +43,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
+      <head>
+        <script src="https://cdn.ckbox.io/ckbox/2.9.2/ckbox.js" crossOrigin="anonymous"></script>
+        <script src="https://cdn.ckbox.io/ckbox/2.9.2/translations/vi.js" crossOrigin="anonymous"></script>
+      </head>
       <body className={`font-sans antialiased`}>
         <AuthProvider>
-          <CartProvider>
-            {children}
-            <CartSidebar />
-            <ChatbotFloatingButton />
-            <MiniGameChat />
-          </CartProvider>
+          <OrderProvider>
+            <CartProvider>
+              {children}
+              <CartSidebar />
+              <ChatbotFloatingButton />
+              <MiniGameChat />
+              <Toaster />
+            </CartProvider>
+          </OrderProvider>
         </AuthProvider>
         <Analytics />
       </body>

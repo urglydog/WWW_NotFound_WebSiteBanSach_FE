@@ -36,7 +36,7 @@
     ".next\\dev/types/**/*.ts",
     ".next\\dev/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "app/news/App.jsx"  ],
   "exclude": [
     "node_modules"
   ]

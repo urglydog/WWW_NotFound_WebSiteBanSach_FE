@@ -6,18 +6,6 @@
 // Get API URL from environment variables
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 
-// Validate API URL in development
-if (process.env.NODE_ENV === "development") {
-  if (!process.env.NEXT_PUBLIC_API_URL) {
-    console.warn(
-      "⚠️ NEXT_PUBLIC_API_URL is not set in .env file. Using default: http://localhost:8080/api"
-    )
-    console.warn("Please create a .env file with: NEXT_PUBLIC_API_URL=http://localhost:8080/api")
-  } else {
-    console.log("✅ API Base URL:", API_BASE_URL)
-  }
-}
-
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -127,16 +115,16 @@ class ApiClient {
     // Filter out undefined, null, and empty string values
     const cleanParams = params
       ? Object.fromEntries(
-          Object.entries(params).filter(
-            ([_, value]) => value !== undefined && value !== null && value !== "" && String(value) !== "undefined"
-          )
+        Object.entries(params).filter(
+          ([_, value]) => value !== undefined && value !== null && value !== "" && String(value) !== "undefined"
         )
+      )
       : undefined
-    
+
     const queryString = cleanParams && Object.keys(cleanParams).length > 0
       ? "?" + new URLSearchParams(
-          Object.entries(cleanParams).map(([key, value]) => [key, String(value)])
-        ).toString()
+        Object.entries(cleanParams).map(([key, value]) => [key, String(value)])
+      ).toString()
       : ""
     return this.request<T>(`${endpoint}${queryString}`, {
       method: "GET",

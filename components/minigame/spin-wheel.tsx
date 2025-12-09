@@ -1,45 +1,44 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Gift, Sparkles } from "lucide-react"
 
-interface WheelSegment {
+export interface WheelSegment {
   label: string
+  code?: string
+  isLose?: boolean
   color: string
   textColor: string
   value: string
 }
 
-const segments: WheelSegment[] = [
-  { label: "10%", color: "#E85D4C", textColor: "#fff", value: "Giảm 10% đơn hàng" },
-  { label: "20%", color: "#4CAF50", textColor: "#fff", value: "Giảm 20% đơn hàng" },
-  { label: "5%", color: "#FF9800", textColor: "#fff", value: "Giảm 5% đơn hàng" },
-  { label: "FREE SHIP", color: "#2196F3", textColor: "#fff", value: "Miễn phí vận chuyển" },
-  { label: "30%", color: "#9C27B0", textColor: "#fff", value: "Giảm 30% đơn hàng" },
-  { label: "1 SÁCH", color: "#F44336", textColor: "#fff", value: "Tặng 1 cuốn sách bất kỳ" },
-  { label: "15%", color: "#00BCD4", textColor: "#fff", value: "Giảm 15% đơn hàng" },
-  { label: "50K", color: "#FFC107", textColor: "#333", value: "Voucher 50.000đ" },
-]
-
 interface SpinWheelProps {
+  segments?: WheelSegment[]
+  disabled?: boolean
+  spinsRemaining?: number
   onSpinComplete: (prize: WheelSegment) => void
 }
 
-export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
+export function SpinWheel({
+  onSpinComplete,
+  segments = [],
+  disabled = false,
+  spinsRemaining = 0,
+}: SpinWheelProps) {
   const [rotation, setRotation] = useState(0)
   const [isSpinning, setIsSpinning] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const segmentAngle = 360 / segments.length
+  const segmentAngle = useMemo(() => (segments.length > 0 ? 360 / segments.length : 0), [segments.length])
 
   useEffect(() => {
     drawWheel()
-  }, [rotation])
+  }, [rotation, segments])
 
   const drawWheel = () => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || segments.length === 0) return
 
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -85,8 +84,8 @@ export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
       ctx.rotate(startAngle + (segmentAngle * Math.PI) / 360)
       ctx.textAlign = "right"
       ctx.fillStyle = segment.textColor
-      ctx.font = "bold 14px Geist, sans-serif"
-      ctx.fillText(segment.label, radius - 20, 5)
+      ctx.font = "bold 16px Geist, sans-serif"
+      ctx.fillText(segment.label, radius - 14, 5)
       ctx.restore()
     })
 
@@ -108,7 +107,7 @@ export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
   }
 
   const spin = () => {
-    if (isSpinning) return
+    if (isSpinning || disabled || segments.length === 0) return
 
     setIsSpinning(true)
 
@@ -148,13 +147,13 @@ export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
   return (
     <div className="relative flex flex-col items-center">
       {/* Pointer */}
-      <div className="absolute top-0 z-10 -mt-2">
-        <div className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[30px] border-l-transparent border-r-transparent border-t-primary drop-shadow-lg" />
+      <div className="absolute top-0 z-10 -mt-3">
+        <div className="w-0 h-0 border-l-[18px] border-r-[18px] border-t-[36px] border-l-transparent border-r-transparent border-t-primary drop-shadow-lg" />
       </div>
 
       {/* Wheel */}
-      <div className="relative mt-4">
-        <canvas ref={canvasRef} width={320} height={320} className="drop-shadow-xl" />
+      <div className="relative mt-6">
+        <canvas ref={canvasRef} width={420} height={420} className="drop-shadow-xl" />
 
         {/* Decorative lights */}
         <div className="absolute inset-0 pointer-events-none">
@@ -177,7 +176,7 @@ export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
       {/* Spin button */}
       <Button
         onClick={spin}
-        disabled={isSpinning}
+        disabled={isSpinning || disabled || segments.length === 0}
         size="lg"
         className="mt-6 px-8 py-6 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
       >
@@ -186,10 +185,12 @@ export function SpinWheel({ onSpinComplete }: SpinWheelProps) {
             <Sparkles className="mr-2 h-5 w-5 animate-spin" />
             Đang quay...
           </>
+        ) : segments.length === 0 ? (
+          "Đang tải khuyến mãi..."
         ) : (
           <>
             <Gift className="mr-2 h-5 w-5" />
-            QUAY NGAY
+            {disabled ? "Hết lượt quay" : `QUAY NGAY (${spinsRemaining})`}
           </>
         )}
       </Button>

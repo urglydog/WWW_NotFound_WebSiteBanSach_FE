@@ -264,10 +264,14 @@ export const usersService = {
 
   /**
    * Get user statistics (Admin only)
-   * GET /api/admin/users/statistics
+   * GET /api/admin/users/statistics?startDate=2024-01-01&endDate=2024-01-31
    */
-  async getUserStatistics(): Promise<UserStatsResponse> {
-    return apiClient.get<UserStatsResponse>('/admin/users/statistics')
+  async getUserStatistics(startDate?: string, endDate?: string): Promise<UserStatsResponse> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiClient.get<UserStatsResponse>(`/admin/users/statistics${queryString ? `?${queryString}` : ''}`)
   },
 
   /**

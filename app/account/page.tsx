@@ -47,7 +47,8 @@ export default function AccountPage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-
+  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   // // Fetch user profile from API - fetch khi user có và chưa fetch
   // Fetch user profile from API
   const fetchUserProfile = async () => {

@@ -15,6 +15,7 @@ export * from "./admin-books.service"
 export * from "./wishlist.service"
 export * from "./address.service"
 export * from "./shipment.service"
+export * from "./authors.service"
 export * from "./chat.service"
 export * from "./dashboard.service"
 
