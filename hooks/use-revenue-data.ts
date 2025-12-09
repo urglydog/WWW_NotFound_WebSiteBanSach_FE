@@ -82,7 +82,7 @@ export function useRevenueData() {
   const summaryCards: SummaryCard[] = useMemo(() => [
     {
       label: "Tổng doanh thu",
-      value: "198.900.000₫",
+      value: "0₫",
       delta: "+7.3% so với tháng trước",
       trend: "up",
       icon: DollarSign,
@@ -90,7 +90,7 @@ export function useRevenueData() {
     },
     {
       label: "Doanh thu thuần",
-      value: "182.450.000₫",
+      value: "0₫",
       delta: "+6.1% so với tháng trước",
       trend: "up",
       icon: Wallet,
@@ -98,7 +98,7 @@ export function useRevenueData() {
     },
     {
       label: "Số đơn hàng",
-      value: "432 đơn",
+      value: "5 đơn",
       delta: "+5.4% so với tháng trước",
       trend: "up",
       icon: Receipt,
@@ -106,7 +106,7 @@ export function useRevenueData() {
     },
     {
       label: "Giá trị trung bình",
-      value: "461.000₫",
+      value: "21.000₫",
       delta: "+2.1% so với tháng trước",
       trend: "up",
       icon: TrendingUp,
