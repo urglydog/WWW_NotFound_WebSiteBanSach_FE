@@ -1,80 +1,83 @@
-import Link from "next/link"
+"use client"
 
+import { useEffect, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { categories, mockBooks } from "@/lib/mock-data"
-import { slugify } from "@/lib/utils"
-import { ArrowRight } from "lucide-react"
-
-const categorySummaries = categories.map((category) => {
-  const books = mockBooks.filter((book) => book.category === category)
-  const featuredBook = books[0]
-
-  return {
-    name: category,
-    slug: slugify(category),
-    count: books.length,
-    featured: featuredBook
-      ? {
-          title: featuredBook.title,
-          author: featuredBook.author,
-          price: featuredBook.price.toLocaleString("vi-VN"),
-        }
-      : null,
-  }
-})
+import { categoriesService, CategoryWithSampleBook } from "@/lib/services/categories.service"
+import Link from "next/link"
+import { Loader2 } from "lucide-react"
 
 export default function CategoriesPage() {
+  const [categories, setCategories] = useState<CategoryWithSampleBook[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await categoriesService.getCategoriesWithSampleBook()
+        setCategories(data)
+      } catch (error) {
+        console.error("Failed to fetch categories:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCategories()
+  }, [])
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-col min-h-screen">
       <Header />
 
       <main className="flex-1">
-        <section className="border-b border-border bg-muted/50">
-          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-            <h1 className="mb-3 text-3xl font-bold text-foreground">Danh mục sách</h1>
-            <p className="max-w-2xl text-muted-foreground">
-              Khám phá những danh mục sách nổi bật cùng các gợi ý nhanh để bạn bắt đầu hành trình đọc sách của mình.
-            </p>
-          </div>
-        </section>
+        <section className="py-14 sm:py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 text-center md:mb-12">
+              <h1 className="mb-3 text-3xl font-bold text-foreground md:mb-4 md:text-4xl">
+                Danh mục sách
+              </h1>
+              <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
+                Khám phá các danh mục sách đa dạng của chúng tôi
+              </p>
+            </div>
 
-        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {categorySummaries.map((category) => (
-              <Card key={category.slug} className="transition hover:border-primary">
-                <CardHeader>
-                  <CardTitle>{category.name}</CardTitle>
-                  <CardDescription>
-                    {category.count > 0 ? `${category.count} tựa sách` : "Chưa có sách trong danh mục này"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {category.featured ? (
-                    <div className="space-y-2 rounded-lg border border-dashed border-border p-4">
-                      <p className="text-sm uppercase text-muted-foreground">Gợi ý nổi bật</p>
-                      <h3 className="font-semibold text-foreground">{category.featured.title}</h3>
-                      <p className="text-sm text-muted-foreground">Tác giả: {category.featured.author}</p>
-                      <p className="font-medium text-primary">{category.featured.price}₫</p>
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-muted-foreground">Không có danh mục nào</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
+                {categories.map((category) => (
+                  <Link key={category.id} href={`/categories/${category.id}`}>
+                    <div className="group cursor-pointer">
+                      <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
+                        <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
+                          {category.sampleBook?.imageUrls?.[0] ? (
+                            <img
+                              src={category.sampleBook.imageUrls[0]}
+                              alt={category.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-4xl sm:text-5xl">📖</span>
+                          )}
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
+                        {category.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground sm:text-base line-clamp-2">
+                        {category.description || `Khám phá ${category.name}`}
+                      </p>
                     </div>
-                  ) : (
-                    <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                      Chúng tôi đang cập nhật thêm sách cho danh mục này.
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Link
-                    href={`/categories/${category.slug}`}
-                    className="flex items-center gap-2 font-medium text-primary hover:text-primary/80"
-                  >
-                    Khám phá danh mục
-                    <ArrowRight size={16} />
                   </Link>
-                </CardFooter>
-              </Card>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>
@@ -83,4 +86,3 @@ export default function CategoriesPage() {
     </div>
   )
 }
-

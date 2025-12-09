@@ -98,6 +98,20 @@ export const booksService = {
   },
 
   /**
+   * Get books by category ID with pagination
+   */
+  async getBooksByCategory(
+    categoryId: string,
+    page: number = 0,
+    pageSize: number = 10
+  ): Promise<PaginatedResponse<Book>> {
+    return apiClient.get<PaginatedResponse<Book>>(`/books/by-category/${categoryId}`, {
+      page,
+      pageSize,
+    });
+  },
+
+  /**
    * Create a new book (Admin only)
    */
   async createBook(data: CreateBookRequest): Promise<Book> {

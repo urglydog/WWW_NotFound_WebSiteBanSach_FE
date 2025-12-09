@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn, cleanMarkdown } from "@/lib/utils";
 import Image from "next/image";
 import { chatService, type AttachmentRequest as ChatAttachmentRequest } from "@/lib/services/chat.service";
 
@@ -154,7 +154,7 @@ export function ChatbotFloatingButton() {
 
       const botMessage: Message = {
         id: Date.now().toString() + "bot",
-        text: response.response,
+        text: cleanMarkdown(response.response),
         isUser: false,
         timestamp: new Date(),
       };

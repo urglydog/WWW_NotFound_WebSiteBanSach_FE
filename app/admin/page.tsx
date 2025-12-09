@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   BarChart,
   Bar,
@@ -15,54 +16,85 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { BookOpenCheck, ShoppingCart, Users, DollarSign, TrendingUp, Target } from "lucide-react"
-import { mockBooks } from "@/lib/mock-data"
-
-const salesData = [
-  { month: "Tháng 1", sales: 4000, orders: 24, customers: 16 },
-  { month: "Tháng 2", sales: 3000, orders: 18, customers: 12 },
-  { month: "Tháng 3", sales: 2000, orders: 22, customers: 15 },
-  { month: "Tháng 4", sales: 2780, orders: 39, customers: 28 },
-  { month: "Tháng 5", sales: 1890, orders: 28, customers: 20 },
-  { month: "Tháng 6", sales: 2390, orders: 34, customers: 24 },
-]
-
-const categoryData = [
-  { name: "Văn học", value: 35 },
-  { name: "Kinh tế", value: 25 },
-  { name: "Tâm lý", value: 20 },
-  { name: "Khác", value: 20 },
-]
+import { BookOpenCheck, ShoppingCart, Users, DollarSign, TrendingUp, Target, Loader2 } from "lucide-react"
+import { dashboardService } from "@/lib/services/dashboard.service"
+import type {
+  DashboardStats,
+  SalesTrendData,
+  TopCategory,
+  PerformanceResponse,
+  TopSellingBook,
+  RecentOrder,
+} from "@/lib/services/dashboard.service"
 
 const COLORS = ["#8b6914", "#d4a574", "#c9957e", "#a68a64"]
 
-const stats = [
-  { label: "Tổng doanh thu", value: "250.000.000₫", delta: "+12% so với tháng trước", icon: DollarSign, color: "text-green-600" },
-  { label: "Đơn hàng", value: "1.234", delta: "+4.5% so với tháng trước", icon: ShoppingCart, color: "text-blue-600" },
-  { label: "Sách trong kho", value: "856", delta: "92 sản phẩm sắp hết hàng", icon: BookOpenCheck, color: "text-purple-600" },
-  { label: "Khách hàng hoạt động", value: "5.678", delta: "+320 người dùng mới", icon: Users, color: "text-orange-600" },
-]
-
-const recentOrders = [
-  { id: "ORD-08214", customer: "Nguyễn Thị Hoa", total: 560000, date: "12/11/2024", status: "Đang giao" },
-  { id: "ORD-08213", customer: "Trần Văn Bình", total: 320000, date: "12/11/2024", status: "Đã giao" },
-  { id: "ORD-08212", customer: "Lê Quốc Phong", total: 180000, date: "11/11/2024", status: "Đang xử lý" },
-  { id: "ORD-08211", customer: "Phạm Mỹ Linh", total: 940000, date: "11/11/2024", status: "Đã giao" },
-]
-
-const performanceGoals = [
-  { label: "Tỷ lệ chuyển đổi", value: "3.8%", target: "Mục tiêu: 4.5%", icon: TrendingUp },
-  { label: "Tỷ lệ hài lòng", value: "92%", target: "Mục tiêu: ≥ 90%", icon: Target },
-]
-
 const statusClass: Record<string, string> = {
-  "Đang xử lý": "bg-yellow-100 text-yellow-700",
-  "Đang giao": "bg-blue-100 text-blue-700",
-  "Đã giao": "bg-green-100 text-green-700",
+  "PENDING": "bg-yellow-100 text-yellow-700",
+  "CONFIRMED": "bg-blue-100 text-blue-700",
+  "PROCESSING": "bg-blue-100 text-blue-700",
+  "SHIPPED": "bg-purple-100 text-purple-700",
+  "DELIVERED": "bg-green-100 text-green-700",
+  "CANCELLED": "bg-red-100 text-red-700",
+  "COMPLETED": "bg-green-100 text-green-700",
+}
+
+const statusLabels: Record<string, string> = {
+  "PENDING": "Chờ xác nhận",
+  "CONFIRMED": "Đã xác nhận",
+  "PROCESSING": "Đang xử lý",
+  "SHIPPED": "Đang giao",
+  "DELIVERED": "Đã giao",
+  "CANCELLED": "Đã hủy",
+  "COMPLETED": "Hoàn thành",
 }
 
 export default function AdminDashboard() {
-  const topBooks = mockBooks.slice(0, 5)
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [salesData, setSalesData] = useState<SalesTrendData[]>([])
+  const [categoryData, setCategoryData] = useState<TopCategory[]>([])
+  const [performance, setPerformance] = useState<PerformanceResponse | null>(null)
+  const [topBooks, setTopBooks] = useState<TopSellingBook[]>([])
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        const [statsData, salesTrend, topCategories, performanceData, topBooksData, recentOrdersData] =
+          await Promise.all([
+            dashboardService.getStats(),
+            dashboardService.getSalesTrend(6),
+            dashboardService.getTopCategories(),
+            dashboardService.getPerformance(),
+            dashboardService.getTopSellingBooks(5),
+            dashboardService.getRecentOrders(4),
+          ])
+
+        setStats(statsData)
+        setSalesData(salesTrend.data)
+        setCategoryData(topCategories.categories)
+        setPerformance(performanceData)
+        setTopBooks(topBooksData.books)
+        setRecentOrders(recentOrdersData.orders)
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -76,20 +108,57 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <div key={stat.label} className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide">{stat.label}</h3>
-                  <p className="text-2xl font-bold text-foreground mt-2">{stat.value}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                </div>
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Tổng doanh thu</h3>
+                <p className="text-2xl font-bold text-foreground mt-2">{stats?.totalRevenue.toLocaleString("vi-VN")}₫</p>
               </div>
-              <p className="text-sm text-muted-foreground">{stat.delta}</p>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
             </div>
-          ))}
+            <p className="text-sm text-muted-foreground">+{stats?.revenueGrowth}% so với tháng trước</p>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Đơn hàng</h3>
+                <p className="text-2xl font-bold text-foreground mt-2">{stats?.totalOrders.toLocaleString("vi-VN")}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <ShoppingCart className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">+{stats?.ordersGrowth}% so với tháng trước</p>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Sách trong kho</h3>
+                <p className="text-2xl font-bold text-foreground mt-2">{stats?.totalBooksInStock.toLocaleString("vi-VN")}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <BookOpenCheck className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">{stats?.lowStockCount} sản phẩm sắp hết hàng</p>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Khách hàng hoạt động</h3>
+                <p className="text-2xl font-bold text-foreground mt-2">{stats?.activeCustomers.toLocaleString("vi-VN")}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">+{stats?.newCustomers} người dùng mới</p>
+          </div>
         </div>
 
         {/* Charts */}
@@ -121,7 +190,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height={320}>
               <PieChart>
                 <Pie
-                  data={categoryData}
+                  data={categoryData.map(cat => ({ name: cat.categoryName, value: cat.percentage }))}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -166,18 +235,26 @@ export default function AdminDashboard() {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
             <h2 className="text-xl font-semibold text-foreground">Mục tiêu hiệu suất</h2>
             <div className="space-y-4">
-              {performanceGoals.map((goal) => (
-                <div key={goal.label} className="flex items-start gap-4 rounded-xl border border-border/60 p-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <goal.icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{goal.label}</p>
-                    <p className="text-xl font-semibold text-foreground mt-1">{goal.value}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{goal.target}</p>
-                  </div>
+              <div className="flex items-start gap-4 rounded-xl border border-border/60 p-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <TrendingUp className="w-5 h-5" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Tỷ lệ chuyển đổi</p>
+                  <p className="text-xl font-semibold text-foreground mt-1">{performance?.conversionRate.current}%</p>
+                  <p className="text-sm text-muted-foreground mt-1">Mục tiêu: {performance?.conversionRate.target}%</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 rounded-xl border border-border/60 p-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Tỷ lệ hài lòng</p>
+                  <p className="text-xl font-semibold text-foreground mt-1">{performance?.satisfactionRate.current}%</p>
+                  <p className="text-sm text-muted-foreground mt-1">Mục tiêu: ≥ {performance?.satisfactionRate.target}%</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -201,12 +278,12 @@ export default function AdminDashboard() {
                     <tr key={book.id} className="border-b border-border/60 last:border-b-0">
                       <td className="py-3 pr-4">
                         <p className="font-medium text-foreground">{book.title}</p>
-                        <p className="text-sm text-muted-foreground">Đánh giá {book.rating}★ · {book.reviews} lượt</p>
+                        <p className="text-sm text-muted-foreground">Đánh giá {book.averageRating.toFixed(1)}★ · {book.reviewCount} lượt</p>
                       </td>
-                      <td className="py-3 pr-4 text-muted-foreground">{book.author}</td>
-                      <td className="py-3 pr-4 text-muted-foreground">{book.category}</td>
+                      <td className="py-3 pr-4 text-muted-foreground">{book.authorNames.join(", ")}</td>
+                      <td className="py-3 pr-4 text-muted-foreground">{book.categoryNames.join(", ")}</td>
                       <td className="py-3 text-right font-semibold text-primary">
-                        {book.price.toLocaleString("vi-VN")}₫
+                        {(book.discountPrice || book.price).toLocaleString("vi-VN")}₫
                       </td>
                     </tr>
                   ))}
@@ -226,22 +303,21 @@ export default function AdminDashboard() {
                 >
                   <div>
                     <p className="text-sm text-muted-foreground">Mã đơn</p>
-                    <p className="font-semibold text-foreground">{order.id}</p>
+                    <p className="font-semibold text-foreground">{order.orderCode}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Khách hàng</p>
-                    <p className="font-medium text-foreground">{order.customer}</p>
+                    <p className="font-medium text-foreground">{order.customerName}</p>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    <p>{order.date}</p>
+                    <p>{order.orderDate}</p>
                     <p className="font-semibold text-foreground">
                       {order.total.toLocaleString("vi-VN")}₫
                     </p>
                   </div>
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      statusClass[order.status] ?? "bg-muted text-foreground"
-                    }`}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusClass[order.status] ?? "bg-muted text-foreground"
+                      }`}
                   >
                     {order.status}
                   </span>
