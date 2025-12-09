@@ -1,6 +1,6 @@
 "use client"
 
-import { mockBooks } from "@/lib/mock-data"
+
 import { ProductCard } from "@/components/products/product-card"
 import { Button } from "@/components/ui/button"
 import { Book } from "@/lib/services/books.service"
@@ -27,42 +27,7 @@ export function RecommendationSection({
     if (books && books.length > 0) {
       return books
     }
-
-    // Map mockBooks to Book type (service)
-    const mappedMockBooks: Book[] = mockBooks.map(b => ({
-      id: b.id,
-      title: b.title,
-      price: b.price,
-      discountPrice: b.price * (1 - (b.discount || 0) / 100),
-      mainImageUrl: b.image,
-      authorNames: [b.author],
-      reviewCount: b.reviews,
-      averageRating: b.rating,
-      stockQuantity: b.inStock ? 100 : 0,
-      // Add other required fields with defaults if necessary
-    }))
-
-    let filtered = [...mappedMockBooks]
-
-    switch (type) {
-      case "trending":
-        filtered.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
-        break
-      case "category":
-        // Note: mock data category is string, mapped is undefined in this simple map unless we add it
-        // For now, we skip category filtering on mock data or we need to map it too
-        // But since we are replacing with API data, this fallback is less critical
-        break
-      case "similar":
-        filtered.sort(() => Math.random() - 0.5)
-        break
-      case "recommendations":
-        filtered = filtered.filter((b) => (b.averageRating || 0) >= 4.5)
-        filtered.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
-        break
-    }
-
-    return filtered.slice(0, limit)
+    return []
   }
 
   const recommendations = getRecommendations()

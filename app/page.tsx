@@ -311,7 +311,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-              {popularCategoriesWithBooks.length > 0 ? (
+              {popularCategoriesWithBooks.length > 0 && (
                 popularCategoriesWithBooks.slice(0, 3).map((item) => (
                   <Link key={item.category.id} href={`/categories/${item.category.id}`}>
                     <div className="group cursor-pointer">
@@ -340,22 +340,6 @@ export default function Home() {
                       <p className="text-sm text-muted-foreground sm:text-base">
                         {item.category.description || `Khám phá ${item.category.name}`}
                       </p>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                ["Văn học", "Kinh tế", "Tâm lý học"].map((category, i) => (
-                  <Link key={i} href={`/categories/${category.toLowerCase()}`}>
-                    <div className="group cursor-pointer">
-                      <div className="mb-4 aspect-square overflow-hidden rounded-lg bg-muted transition group-hover:shadow-lg">
-                        <div className="flex h-full w-full items-center justify-center transition group-hover:bg-secondary">
-                          <span className="text-4xl sm:text-5xl">📖</span>
-                        </div>
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground transition group-hover:text-primary">
-                        {category}
-                      </h3>
-                      <p className="text-sm text-muted-foreground sm:text-base">Khám phá {category.toLowerCase()}</p>
                     </div>
                   </Link>
                 ))
